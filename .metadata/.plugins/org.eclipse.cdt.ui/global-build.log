@@ -1,0 +1,615 @@
+11:52:25 **** Clean-only build of configuration Debug for project lpc_board_nxp_lpcxpresso_1549 ****
+make -r clean 
+rm -rf  ./src/board.o ./src/board_sysinit.o  ./src/board.d ./src/board_sysinit.d  liblpc_board_nxp_lpcxpresso_1549.a
+ 
+11:52:26 **** Build of configuration Debug for project lpc_board_nxp_lpcxpresso_1549 ****
+make -r all 
+Building file: ../src/board.c
+Invoking: MCU C Compiler
+arm-none-eabi-gcc -DDEBUG -D__CODE_RED -D__USE_LPCOPEN -DCORE_M3 -D__NEWLIB__ -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\lpc_chip_15xx\inc" -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\lpc_board_nxp_lpcxpresso_1549\inc" -O0 -g3 -Wall -c -fmessage-length=0 -fno-builtin -ffunction-sections -fdata-sections -mcpu=cortex-m3 -mthumb -D__NEWLIB__ -MMD -MP -MF"src/board.d" -MT"src/board.o" -MT"src/board.d" -o "src/board.o" "../src/board.c"
+Finished building: ../src/board.c
+ 
+Building file: ../src/board_sysinit.c
+Invoking: MCU C Compiler
+arm-none-eabi-gcc -DDEBUG -D__CODE_RED -D__USE_LPCOPEN -DCORE_M3 -D__NEWLIB__ -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\lpc_chip_15xx\inc" -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\lpc_board_nxp_lpcxpresso_1549\inc" -O0 -g3 -Wall -c -fmessage-length=0 -fno-builtin -ffunction-sections -fdata-sections -mcpu=cortex-m3 -mthumb -D__NEWLIB__ -MMD -MP -MF"src/board_sysinit.d" -MT"src/board_sysinit.o" -MT"src/board_sysinit.d" -o "src/board_sysinit.o" "../src/board_sysinit.c"
+Finished building: ../src/board_sysinit.c
+ 
+Building target: liblpc_board_nxp_lpcxpresso_1549.a
+Invoking: MCU Archiver
+arm-none-eabi-ar -r  "liblpc_board_nxp_lpcxpresso_1549.a"  ./src/board.o ./src/board_sysinit.o   
+c:\nxp\MCUXpressoIDE_10.1.1_606\ide\tools\bin\arm-none-eabi-ar.exe: creating liblpc_board_nxp_lpcxpresso_1549.a
+Finished building target: liblpc_board_nxp_lpcxpresso_1549.a
+ 
+make --no-print-directory post-build
+Performing post-build steps
+arm-none-eabi-size "liblpc_board_nxp_lpcxpresso_1549.a" ; # arm-none-eabi-objdump -h -S "liblpc_board_nxp_lpcxpresso_1549.a" >"liblpc_board_nxp_lpcxpresso_1549.lss"
+   text	   data	    bss	    dec	    hex	filename
+   1357	      0	      0	   1357	    54d	board.o (ex liblpc_board_nxp_lpcxpresso_1549.a)
+    570	      0	      0	    570	    23a	board_sysinit.o (ex liblpc_board_nxp_lpcxpresso_1549.a)
+ 
+11:52:28 **** Clean-only build of configuration Debug for project lpc_chip_15xx ****
+make -r clean 
+rm -rf  ./src/acmp_15xx.o ./src/adc_15xx.o ./src/chip_15xx.o ./src/clock_15xx.o ./src/crc_15xx.o ./src/dac_15xx.o ./src/dma_15xx.o ./src/eeprom.o ./src/gpio_15xx.o ./src/i2c_common_15xx.o ./src/i2cm_15xx.o ./src/i2cs_15xx.o ./src/iap.o ./src/iocon_15xx.o ./src/pinint_15xx.o ./src/pmu_15xx.o ./src/ring_buffer.o ./src/ritimer_15xx.o ./src/rtc_15xx.o ./src/sct_15xx.o ./src/sct_pwm_15xx.o ./src/sctipu_15xx.o ./src/spi_15xx.o ./src/stopwatch_15xx.o ./src/swm_15xx.o ./src/sysctl_15xx.o ./src/sysinit_15xx.o ./src/uart_15xx.o ./src/wwdt_15xx.o  ./src/acmp_15xx.d ./src/adc_15xx.d ./src/chip_15xx.d ./src/clock_15xx.d ./src/crc_15xx.d ./src/dac_15xx.d ./src/dma_15xx.d ./src/eeprom.d ./src/gpio_15xx.d ./src/i2c_common_15xx.d ./src/i2cm_15xx.d ./src/i2cs_15xx.d ./src/iap.d ./src/iocon_15xx.d ./src/pinint_15xx.d ./src/pmu_15xx.d ./src/ring_buffer.d ./src/ritimer_15xx.d ./src/rtc_15xx.d ./src/sct_15xx.d ./src/sct_pwm_15xx.d ./src/sctipu_15xx.d ./src/spi_15xx.d ./src/stopwatch_15xx.d ./src/swm_15xx.d ./src/sysctl_15xx.d ./src/sysinit_15xx.d ./src/uart_15xx.d ./src/wwdt_15xx.d  liblpc_chip_15xx.a
+ 
+11:52:29 **** Build of configuration Debug for project lpc_chip_15xx ****
+make -r all 
+Building file: ../src/acmp_15xx.c
+Invoking: MCU C Compiler
+arm-none-eabi-gcc -DDEBUG -D__CODE_RED -D__USE_LPCOPEN -DCORE_M3 -D__NEWLIB__ -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\lpc_chip_15xx\inc" -O0 -g3 -Wall -c -fmessage-length=0 -fno-builtin -ffunction-sections -fdata-sections -mcpu=cortex-m3 -mthumb -D__NEWLIB__ -MMD -MP -MF"src/acmp_15xx.d" -MT"src/acmp_15xx.o" -MT"src/acmp_15xx.d" -o "src/acmp_15xx.o" "../src/acmp_15xx.c"
+Finished building: ../src/acmp_15xx.c
+ 
+Building file: ../src/adc_15xx.c
+Invoking: MCU C Compiler
+arm-none-eabi-gcc -DDEBUG -D__CODE_RED -D__USE_LPCOPEN -DCORE_M3 -D__NEWLIB__ -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\lpc_chip_15xx\inc" -O0 -g3 -Wall -c -fmessage-length=0 -fno-builtin -ffunction-sections -fdata-sections -mcpu=cortex-m3 -mthumb -D__NEWLIB__ -MMD -MP -MF"src/adc_15xx.d" -MT"src/adc_15xx.o" -MT"src/adc_15xx.d" -o "src/adc_15xx.o" "../src/adc_15xx.c"
+Finished building: ../src/adc_15xx.c
+ 
+Building file: ../src/chip_15xx.c
+Invoking: MCU C Compiler
+arm-none-eabi-gcc -DDEBUG -D__CODE_RED -D__USE_LPCOPEN -DCORE_M3 -D__NEWLIB__ -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\lpc_chip_15xx\inc" -O0 -g3 -Wall -c -fmessage-length=0 -fno-builtin -ffunction-sections -fdata-sections -mcpu=cortex-m3 -mthumb -D__NEWLIB__ -MMD -MP -MF"src/chip_15xx.d" -MT"src/chip_15xx.o" -MT"src/chip_15xx.d" -o "src/chip_15xx.o" "../src/chip_15xx.c"
+Finished building: ../src/chip_15xx.c
+ 
+Building file: ../src/clock_15xx.c
+Invoking: MCU C Compiler
+arm-none-eabi-gcc -DDEBUG -D__CODE_RED -D__USE_LPCOPEN -DCORE_M3 -D__NEWLIB__ -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\lpc_chip_15xx\inc" -O0 -g3 -Wall -c -fmessage-length=0 -fno-builtin -ffunction-sections -fdata-sections -mcpu=cortex-m3 -mthumb -D__NEWLIB__ -MMD -MP -MF"src/clock_15xx.d" -MT"src/clock_15xx.o" -MT"src/clock_15xx.d" -o "src/clock_15xx.o" "../src/clock_15xx.c"
+Finished building: ../src/clock_15xx.c
+ 
+Building file: ../src/crc_15xx.c
+Invoking: MCU C Compiler
+arm-none-eabi-gcc -DDEBUG -D__CODE_RED -D__USE_LPCOPEN -DCORE_M3 -D__NEWLIB__ -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\lpc_chip_15xx\inc" -O0 -g3 -Wall -c -fmessage-length=0 -fno-builtin -ffunction-sections -fdata-sections -mcpu=cortex-m3 -mthumb -D__NEWLIB__ -MMD -MP -MF"src/crc_15xx.d" -MT"src/crc_15xx.o" -MT"src/crc_15xx.d" -o "src/crc_15xx.o" "../src/crc_15xx.c"
+Finished building: ../src/crc_15xx.c
+ 
+Building file: ../src/dac_15xx.c
+Invoking: MCU C Compiler
+arm-none-eabi-gcc -DDEBUG -D__CODE_RED -D__USE_LPCOPEN -DCORE_M3 -D__NEWLIB__ -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\lpc_chip_15xx\inc" -O0 -g3 -Wall -c -fmessage-length=0 -fno-builtin -ffunction-sections -fdata-sections -mcpu=cortex-m3 -mthumb -D__NEWLIB__ -MMD -MP -MF"src/dac_15xx.d" -MT"src/dac_15xx.o" -MT"src/dac_15xx.d" -o "src/dac_15xx.o" "../src/dac_15xx.c"
+Finished building: ../src/dac_15xx.c
+ 
+Building file: ../src/dma_15xx.c
+Invoking: MCU C Compiler
+arm-none-eabi-gcc -DDEBUG -D__CODE_RED -D__USE_LPCOPEN -DCORE_M3 -D__NEWLIB__ -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\lpc_chip_15xx\inc" -O0 -g3 -Wall -c -fmessage-length=0 -fno-builtin -ffunction-sections -fdata-sections -mcpu=cortex-m3 -mthumb -D__NEWLIB__ -MMD -MP -MF"src/dma_15xx.d" -MT"src/dma_15xx.o" -MT"src/dma_15xx.d" -o "src/dma_15xx.o" "../src/dma_15xx.c"
+Finished building: ../src/dma_15xx.c
+ 
+Building file: ../src/eeprom.c
+Invoking: MCU C Compiler
+arm-none-eabi-gcc -DDEBUG -D__CODE_RED -D__USE_LPCOPEN -DCORE_M3 -D__NEWLIB__ -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\lpc_chip_15xx\inc" -O0 -g3 -Wall -c -fmessage-length=0 -fno-builtin -ffunction-sections -fdata-sections -mcpu=cortex-m3 -mthumb -D__NEWLIB__ -MMD -MP -MF"src/eeprom.d" -MT"src/eeprom.o" -MT"src/eeprom.d" -o "src/eeprom.o" "../src/eeprom.c"
+../src/eeprom.c: In function 'Chip_EEPROM_Write':
+../src/eeprom.c:61:12: warning: passing argument 1 of 'iap_entry' from incompatible pointer type [-Wincompatible-pointer-types]
+  iap_entry(command, result);
+            ^~~~~~~
+In file included from C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\lpc_chip_15xx\inc/chip.h:158:0,
+                 from ../src/eeprom.c:32:
+C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\lpc_chip_15xx\inc/romapi_15xx.h:102:20: note: expected 'unsigned int *' but argument is of type 'uint32_t * {aka long unsigned int *}'
+ static INLINE void iap_entry(unsigned int cmd_param[5], unsigned int status_result[4])
+                    ^~~~~~~~~
+../src/eeprom.c:61:21: warning: passing argument 2 of 'iap_entry' from incompatible pointer type [-Wincompatible-pointer-types]
+  iap_entry(command, result);
+                     ^~~~~~
+In file included from C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\lpc_chip_15xx\inc/chip.h:158:0,
+                 from ../src/eeprom.c:32:
+C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\lpc_chip_15xx\inc/romapi_15xx.h:102:20: note: expected 'unsigned int *' but argument is of type 'uint32_t * {aka long unsigned int *}'
+ static INLINE void iap_entry(unsigned int cmd_param[5], unsigned int status_result[4])
+                    ^~~~~~~~~
+../src/eeprom.c: In function 'Chip_EEPROM_Read':
+../src/eeprom.c:76:12: warning: passing argument 1 of 'iap_entry' from incompatible pointer type [-Wincompatible-pointer-types]
+  iap_entry(command, result);
+            ^~~~~~~
+In file included from C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\lpc_chip_15xx\inc/chip.h:158:0,
+                 from ../src/eeprom.c:32:
+C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\lpc_chip_15xx\inc/romapi_15xx.h:102:20: note: expected 'unsigned int *' but argument is of type 'uint32_t * {aka long unsigned int *}'
+ static INLINE void iap_entry(unsigned int cmd_param[5], unsigned int status_result[4])
+                    ^~~~~~~~~
+../src/eeprom.c:76:21: warning: passing argument 2 of 'iap_entry' from incompatible pointer type [-Wincompatible-pointer-types]
+  iap_entry(command, result);
+                     ^~~~~~
+In file included from C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\lpc_chip_15xx\inc/chip.h:158:0,
+                 from ../src/eeprom.c:32:
+C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\lpc_chip_15xx\inc/romapi_15xx.h:102:20: note: expected 'unsigned int *' but argument is of type 'uint32_t * {aka long unsigned int *}'
+ static INLINE void iap_entry(unsigned int cmd_param[5], unsigned int status_result[4])
+                    ^~~~~~~~~
+Finished building: ../src/eeprom.c
+ 
+Building file: ../src/gpio_15xx.c
+Invoking: MCU C Compiler
+arm-none-eabi-gcc -DDEBUG -D__CODE_RED -D__USE_LPCOPEN -DCORE_M3 -D__NEWLIB__ -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\lpc_chip_15xx\inc" -O0 -g3 -Wall -c -fmessage-length=0 -fno-builtin -ffunction-sections -fdata-sections -mcpu=cortex-m3 -mthumb -D__NEWLIB__ -MMD -MP -MF"src/gpio_15xx.d" -MT"src/gpio_15xx.o" -MT"src/gpio_15xx.d" -o "src/gpio_15xx.o" "../src/gpio_15xx.c"
+Finished building: ../src/gpio_15xx.c
+ 
+Building file: ../src/i2c_common_15xx.c
+Invoking: MCU C Compiler
+arm-none-eabi-gcc -DDEBUG -D__CODE_RED -D__USE_LPCOPEN -DCORE_M3 -D__NEWLIB__ -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\lpc_chip_15xx\inc" -O0 -g3 -Wall -c -fmessage-length=0 -fno-builtin -ffunction-sections -fdata-sections -mcpu=cortex-m3 -mthumb -D__NEWLIB__ -MMD -MP -MF"src/i2c_common_15xx.d" -MT"src/i2c_common_15xx.o" -MT"src/i2c_common_15xx.d" -o "src/i2c_common_15xx.o" "../src/i2c_common_15xx.c"
+Finished building: ../src/i2c_common_15xx.c
+ 
+Building file: ../src/i2cm_15xx.c
+Invoking: MCU C Compiler
+arm-none-eabi-gcc -DDEBUG -D__CODE_RED -D__USE_LPCOPEN -DCORE_M3 -D__NEWLIB__ -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\lpc_chip_15xx\inc" -O0 -g3 -Wall -c -fmessage-length=0 -fno-builtin -ffunction-sections -fdata-sections -mcpu=cortex-m3 -mthumb -D__NEWLIB__ -MMD -MP -MF"src/i2cm_15xx.d" -MT"src/i2cm_15xx.o" -MT"src/i2cm_15xx.d" -o "src/i2cm_15xx.o" "../src/i2cm_15xx.c"
+Finished building: ../src/i2cm_15xx.c
+ 
+Building file: ../src/i2cs_15xx.c
+Invoking: MCU C Compiler
+arm-none-eabi-gcc -DDEBUG -D__CODE_RED -D__USE_LPCOPEN -DCORE_M3 -D__NEWLIB__ -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\lpc_chip_15xx\inc" -O0 -g3 -Wall -c -fmessage-length=0 -fno-builtin -ffunction-sections -fdata-sections -mcpu=cortex-m3 -mthumb -D__NEWLIB__ -MMD -MP -MF"src/i2cs_15xx.d" -MT"src/i2cs_15xx.o" -MT"src/i2cs_15xx.d" -o "src/i2cs_15xx.o" "../src/i2cs_15xx.c"
+Finished building: ../src/i2cs_15xx.c
+ 
+Building file: ../src/iap.c
+Invoking: MCU C Compiler
+arm-none-eabi-gcc -DDEBUG -D__CODE_RED -D__USE_LPCOPEN -DCORE_M3 -D__NEWLIB__ -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\lpc_chip_15xx\inc" -O0 -g3 -Wall -c -fmessage-length=0 -fno-builtin -ffunction-sections -fdata-sections -mcpu=cortex-m3 -mthumb -D__NEWLIB__ -MMD -MP -MF"src/iap.d" -MT"src/iap.o" -MT"src/iap.d" -o "src/iap.o" "../src/iap.c"
+../src/iap.c: In function 'Chip_IAP_PreSectorForReadWrite':
+../src/iap.c:58:12: warning: passing argument 1 of 'iap_entry' from incompatible pointer type [-Wincompatible-pointer-types]
+  iap_entry(command, result);
+            ^~~~~~~
+In file included from C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\lpc_chip_15xx\inc/chip.h:158:0,
+                 from ../src/iap.c:32:
+C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\lpc_chip_15xx\inc/romapi_15xx.h:102:20: note: expected 'unsigned int *' but argument is of type 'uint32_t * {aka long unsigned int *}'
+ static INLINE void iap_entry(unsigned int cmd_param[5], unsigned int status_result[4])
+                    ^~~~~~~~~
+../src/iap.c:58:21: warning: passing argument 2 of 'iap_entry' from incompatible pointer type [-Wincompatible-pointer-types]
+  iap_entry(command, result);
+                     ^~~~~~
+In file included from C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\lpc_chip_15xx\inc/chip.h:158:0,
+                 from ../src/iap.c:32:
+C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\lpc_chip_15xx\inc/romapi_15xx.h:102:20: note: expected 'unsigned int *' but argument is of type 'uint32_t * {aka long unsigned int *}'
+ static INLINE void iap_entry(unsigned int cmd_param[5], unsigned int status_result[4])
+                    ^~~~~~~~~
+../src/iap.c: In function 'Chip_IAP_CopyRamToFlash':
+../src/iap.c:73:12: warning: passing argument 1 of 'iap_entry' from incompatible pointer type [-Wincompatible-pointer-types]
+  iap_entry(command, result);
+            ^~~~~~~
+In file included from C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\lpc_chip_15xx\inc/chip.h:158:0,
+                 from ../src/iap.c:32:
+C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\lpc_chip_15xx\inc/romapi_15xx.h:102:20: note: expected 'unsigned int *' but argument is of type 'uint32_t * {aka long unsigned int *}'
+ static INLINE void iap_entry(unsigned int cmd_param[5], unsigned int status_result[4])
+                    ^~~~~~~~~
+../src/iap.c:73:21: warning: passing argument 2 of 'iap_entry' from incompatible pointer type [-Wincompatible-pointer-types]
+  iap_entry(command, result);
+                     ^~~~~~
+In file included from C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\lpc_chip_15xx\inc/chip.h:158:0,
+                 from ../src/iap.c:32:
+C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\lpc_chip_15xx\inc/romapi_15xx.h:102:20: note: expected 'unsigned int *' but argument is of type 'uint32_t * {aka long unsigned int *}'
+ static INLINE void iap_entry(unsigned int cmd_param[5], unsigned int status_result[4])
+                    ^~~~~~~~~
+../src/iap.c: In function 'Chip_IAP_EraseSector':
+../src/iap.c:87:12: warning: passing argument 1 of 'iap_entry' from incompatible pointer type [-Wincompatible-pointer-types]
+  iap_entry(command, result);
+            ^~~~~~~
+In file included from C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\lpc_chip_15xx\inc/chip.h:158:0,
+                 from ../src/iap.c:32:
+C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\lpc_chip_15xx\inc/romapi_15xx.h:102:20: note: expected 'unsigned int *' but argument is of type 'uint32_t * {aka long unsigned int *}'
+ static INLINE void iap_entry(unsigned int cmd_param[5], unsigned int status_result[4])
+                    ^~~~~~~~~
+../src/iap.c:87:21: warning: passing argument 2 of 'iap_entry' from incompatible pointer type [-Wincompatible-pointer-types]
+  iap_entry(command, result);
+                     ^~~~~~
+In file included from C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\lpc_chip_15xx\inc/chip.h:158:0,
+                 from ../src/iap.c:32:
+C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\lpc_chip_15xx\inc/romapi_15xx.h:102:20: note: expected 'unsigned int *' but argument is of type 'uint32_t * {aka long unsigned int *}'
+ static INLINE void iap_entry(unsigned int cmd_param[5], unsigned int status_result[4])
+                    ^~~~~~~~~
+../src/iap.c: In function 'Chip_IAP_BlankCheckSector':
+../src/iap.c:100:12: warning: passing argument 1 of 'iap_entry' from incompatible pointer type [-Wincompatible-pointer-types]
+  iap_entry(command, result);
+            ^~~~~~~
+In file included from C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\lpc_chip_15xx\inc/chip.h:158:0,
+                 from ../src/iap.c:32:
+C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\lpc_chip_15xx\inc/romapi_15xx.h:102:20: note: expected 'unsigned int *' but argument is of type 'uint32_t * {aka long unsigned int *}'
+ static INLINE void iap_entry(unsigned int cmd_param[5], unsigned int status_result[4])
+                    ^~~~~~~~~
+../src/iap.c:100:21: warning: passing argument 2 of 'iap_entry' from incompatible pointer type [-Wincompatible-pointer-types]
+  iap_entry(command, result);
+                     ^~~~~~
+In file included from C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\lpc_chip_15xx\inc/chip.h:158:0,
+                 from ../src/iap.c:32:
+C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\lpc_chip_15xx\inc/romapi_15xx.h:102:20: note: expected 'unsigned int *' but argument is of type 'uint32_t * {aka long unsigned int *}'
+ static INLINE void iap_entry(unsigned int cmd_param[5], unsigned int status_result[4])
+                    ^~~~~~~~~
+../src/iap.c: In function 'Chip_IAP_ReadPID':
+../src/iap.c:111:12: warning: passing argument 1 of 'iap_entry' from incompatible pointer type [-Wincompatible-pointer-types]
+  iap_entry(command, result);
+            ^~~~~~~
+In file included from C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\lpc_chip_15xx\inc/chip.h:158:0,
+                 from ../src/iap.c:32:
+C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\lpc_chip_15xx\inc/romapi_15xx.h:102:20: note: expected 'unsigned int *' but argument is of type 'uint32_t * {aka long unsigned int *}'
+ static INLINE void iap_entry(unsigned int cmd_param[5], unsigned int status_result[4])
+                    ^~~~~~~~~
+../src/iap.c:111:21: warning: passing argument 2 of 'iap_entry' from incompatible pointer type [-Wincompatible-pointer-types]
+  iap_entry(command, result);
+                     ^~~~~~
+In file included from C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\lpc_chip_15xx\inc/chip.h:158:0,
+                 from ../src/iap.c:32:
+C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\lpc_chip_15xx\inc/romapi_15xx.h:102:20: note: expected 'unsigned int *' but argument is of type 'uint32_t * {aka long unsigned int *}'
+ static INLINE void iap_entry(unsigned int cmd_param[5], unsigned int status_result[4])
+                    ^~~~~~~~~
+../src/iap.c: In function 'Chip_IAP_ReadBootCode':
+../src/iap.c:122:12: warning: passing argument 1 of 'iap_entry' from incompatible pointer type [-Wincompatible-pointer-types]
+  iap_entry(command, result);
+            ^~~~~~~
+In file included from C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\lpc_chip_15xx\inc/chip.h:158:0,
+                 from ../src/iap.c:32:
+C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\lpc_chip_15xx\inc/romapi_15xx.h:102:20: note: expected 'unsigned int *' but argument is of type 'uint32_t * {aka long unsigned int *}'
+ static INLINE void iap_entry(unsigned int cmd_param[5], unsigned int status_result[4])
+                    ^~~~~~~~~
+../src/iap.c:122:21: warning: passing argument 2 of 'iap_entry' from incompatible pointer type [-Wincompatible-pointer-types]
+  iap_entry(command, result);
+                     ^~~~~~
+In file included from C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\lpc_chip_15xx\inc/chip.h:158:0,
+                 from ../src/iap.c:32:
+C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\lpc_chip_15xx\inc/romapi_15xx.h:102:20: note: expected 'unsigned int *' but argument is of type 'uint32_t * {aka long unsigned int *}'
+ static INLINE void iap_entry(unsigned int cmd_param[5], unsigned int status_result[4])
+                    ^~~~~~~~~
+../src/iap.c: In function 'Chip_IAP_Compare':
+../src/iap.c:136:12: warning: passing argument 1 of 'iap_entry' from incompatible pointer type [-Wincompatible-pointer-types]
+  iap_entry(command, result);
+            ^~~~~~~
+In file included from C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\lpc_chip_15xx\inc/chip.h:158:0,
+                 from ../src/iap.c:32:
+C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\lpc_chip_15xx\inc/romapi_15xx.h:102:20: note: expected 'unsigned int *' but argument is of type 'uint32_t * {aka long unsigned int *}'
+ static INLINE void iap_entry(unsigned int cmd_param[5], unsigned int status_result[4])
+                    ^~~~~~~~~
+../src/iap.c:136:21: warning: passing argument 2 of 'iap_entry' from incompatible pointer type [-Wincompatible-pointer-types]
+  iap_entry(command, result);
+                     ^~~~~~
+In file included from C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\lpc_chip_15xx\inc/chip.h:158:0,
+                 from ../src/iap.c:32:
+C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\lpc_chip_15xx\inc/romapi_15xx.h:102:20: note: expected 'unsigned int *' but argument is of type 'uint32_t * {aka long unsigned int *}'
+ static INLINE void iap_entry(unsigned int cmd_param[5], unsigned int status_result[4])
+                    ^~~~~~~~~
+../src/iap.c: In function 'Chip_IAP_ReinvokeISP':
+../src/iap.c:147:12: warning: passing argument 1 of 'iap_entry' from incompatible pointer type [-Wincompatible-pointer-types]
+  iap_entry(command, result);
+            ^~~~~~~
+In file included from C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\lpc_chip_15xx\inc/chip.h:158:0,
+                 from ../src/iap.c:32:
+C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\lpc_chip_15xx\inc/romapi_15xx.h:102:20: note: expected 'unsigned int *' but argument is of type 'uint32_t * {aka long unsigned int *}'
+ static INLINE void iap_entry(unsigned int cmd_param[5], unsigned int status_result[4])
+                    ^~~~~~~~~
+../src/iap.c:147:21: warning: passing argument 2 of 'iap_entry' from incompatible pointer type [-Wincompatible-pointer-types]
+  iap_entry(command, result);
+                     ^~~~~~
+In file included from C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\lpc_chip_15xx\inc/chip.h:158:0,
+                 from ../src/iap.c:32:
+C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\lpc_chip_15xx\inc/romapi_15xx.h:102:20: note: expected 'unsigned int *' but argument is of type 'uint32_t * {aka long unsigned int *}'
+ static INLINE void iap_entry(unsigned int cmd_param[5], unsigned int status_result[4])
+                    ^~~~~~~~~
+../src/iap.c: In function 'Chip_IAP_ReadUID':
+../src/iap.c:159:12: warning: passing argument 1 of 'iap_entry' from incompatible pointer type [-Wincompatible-pointer-types]
+  iap_entry(command, result);
+            ^~~~~~~
+In file included from C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\lpc_chip_15xx\inc/chip.h:158:0,
+                 from ../src/iap.c:32:
+C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\lpc_chip_15xx\inc/romapi_15xx.h:102:20: note: expected 'unsigned int *' but argument is of type 'uint32_t * {aka long unsigned int *}'
+ static INLINE void iap_entry(unsigned int cmd_param[5], unsigned int status_result[4])
+                    ^~~~~~~~~
+../src/iap.c:159:21: warning: passing argument 2 of 'iap_entry' from incompatible pointer type [-Wincompatible-pointer-types]
+  iap_entry(command, result);
+                     ^~~~~~
+In file included from C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\lpc_chip_15xx\inc/chip.h:158:0,
+                 from ../src/iap.c:32:
+C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\lpc_chip_15xx\inc/romapi_15xx.h:102:20: note: expected 'unsigned int *' but argument is of type 'uint32_t * {aka long unsigned int *}'
+ static INLINE void iap_entry(unsigned int cmd_param[5], unsigned int status_result[4])
+                    ^~~~~~~~~
+../src/iap.c: In function 'Chip_IAP_ErasePage':
+../src/iap.c:176:12: warning: passing argument 1 of 'iap_entry' from incompatible pointer type [-Wincompatible-pointer-types]
+  iap_entry(command, result);
+            ^~~~~~~
+In file included from C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\lpc_chip_15xx\inc/chip.h:158:0,
+                 from ../src/iap.c:32:
+C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\lpc_chip_15xx\inc/romapi_15xx.h:102:20: note: expected 'unsigned int *' but argument is of type 'uint32_t * {aka long unsigned int *}'
+ static INLINE void iap_entry(unsigned int cmd_param[5], unsigned int status_result[4])
+                    ^~~~~~~~~
+../src/iap.c:176:21: warning: passing argument 2 of 'iap_entry' from incompatible pointer type [-Wincompatible-pointer-types]
+  iap_entry(command, result);
+                     ^~~~~~
+In file included from C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\lpc_chip_15xx\inc/chip.h:158:0,
+                 from ../src/iap.c:32:
+C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\lpc_chip_15xx\inc/romapi_15xx.h:102:20: note: expected 'unsigned int *' but argument is of type 'uint32_t * {aka long unsigned int *}'
+ static INLINE void iap_entry(unsigned int cmd_param[5], unsigned int status_result[4])
+                    ^~~~~~~~~
+Finished building: ../src/iap.c
+ 
+Building file: ../src/iocon_15xx.c
+Invoking: MCU C Compiler
+arm-none-eabi-gcc -DDEBUG -D__CODE_RED -D__USE_LPCOPEN -DCORE_M3 -D__NEWLIB__ -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\lpc_chip_15xx\inc" -O0 -g3 -Wall -c -fmessage-length=0 -fno-builtin -ffunction-sections -fdata-sections -mcpu=cortex-m3 -mthumb -D__NEWLIB__ -MMD -MP -MF"src/iocon_15xx.d" -MT"src/iocon_15xx.o" -MT"src/iocon_15xx.d" -o "src/iocon_15xx.o" "../src/iocon_15xx.c"
+Finished building: ../src/iocon_15xx.c
+ 
+Building file: ../src/pinint_15xx.c
+Invoking: MCU C Compiler
+arm-none-eabi-gcc -DDEBUG -D__CODE_RED -D__USE_LPCOPEN -DCORE_M3 -D__NEWLIB__ -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\lpc_chip_15xx\inc" -O0 -g3 -Wall -c -fmessage-length=0 -fno-builtin -ffunction-sections -fdata-sections -mcpu=cortex-m3 -mthumb -D__NEWLIB__ -MMD -MP -MF"src/pinint_15xx.d" -MT"src/pinint_15xx.o" -MT"src/pinint_15xx.d" -o "src/pinint_15xx.o" "../src/pinint_15xx.c"
+Finished building: ../src/pinint_15xx.c
+ 
+Building file: ../src/pmu_15xx.c
+Invoking: MCU C Compiler
+arm-none-eabi-gcc -DDEBUG -D__CODE_RED -D__USE_LPCOPEN -DCORE_M3 -D__NEWLIB__ -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\lpc_chip_15xx\inc" -O0 -g3 -Wall -c -fmessage-length=0 -fno-builtin -ffunction-sections -fdata-sections -mcpu=cortex-m3 -mthumb -D__NEWLIB__ -MMD -MP -MF"src/pmu_15xx.d" -MT"src/pmu_15xx.o" -MT"src/pmu_15xx.d" -o "src/pmu_15xx.o" "../src/pmu_15xx.c"
+Finished building: ../src/pmu_15xx.c
+ 
+Building file: ../src/ring_buffer.c
+Invoking: MCU C Compiler
+arm-none-eabi-gcc -DDEBUG -D__CODE_RED -D__USE_LPCOPEN -DCORE_M3 -D__NEWLIB__ -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\lpc_chip_15xx\inc" -O0 -g3 -Wall -c -fmessage-length=0 -fno-builtin -ffunction-sections -fdata-sections -mcpu=cortex-m3 -mthumb -D__NEWLIB__ -MMD -MP -MF"src/ring_buffer.d" -MT"src/ring_buffer.o" -MT"src/ring_buffer.d" -o "src/ring_buffer.o" "../src/ring_buffer.c"
+Finished building: ../src/ring_buffer.c
+ 
+Building file: ../src/ritimer_15xx.c
+Invoking: MCU C Compiler
+arm-none-eabi-gcc -DDEBUG -D__CODE_RED -D__USE_LPCOPEN -DCORE_M3 -D__NEWLIB__ -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\lpc_chip_15xx\inc" -O0 -g3 -Wall -c -fmessage-length=0 -fno-builtin -ffunction-sections -fdata-sections -mcpu=cortex-m3 -mthumb -D__NEWLIB__ -MMD -MP -MF"src/ritimer_15xx.d" -MT"src/ritimer_15xx.o" -MT"src/ritimer_15xx.d" -o "src/ritimer_15xx.o" "../src/ritimer_15xx.c"
+Finished building: ../src/ritimer_15xx.c
+ 
+Building file: ../src/rtc_15xx.c
+Invoking: MCU C Compiler
+arm-none-eabi-gcc -DDEBUG -D__CODE_RED -D__USE_LPCOPEN -DCORE_M3 -D__NEWLIB__ -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\lpc_chip_15xx\inc" -O0 -g3 -Wall -c -fmessage-length=0 -fno-builtin -ffunction-sections -fdata-sections -mcpu=cortex-m3 -mthumb -D__NEWLIB__ -MMD -MP -MF"src/rtc_15xx.d" -MT"src/rtc_15xx.o" -MT"src/rtc_15xx.d" -o "src/rtc_15xx.o" "../src/rtc_15xx.c"
+Finished building: ../src/rtc_15xx.c
+ 
+Building file: ../src/sct_15xx.c
+Invoking: MCU C Compiler
+arm-none-eabi-gcc -DDEBUG -D__CODE_RED -D__USE_LPCOPEN -DCORE_M3 -D__NEWLIB__ -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\lpc_chip_15xx\inc" -O0 -g3 -Wall -c -fmessage-length=0 -fno-builtin -ffunction-sections -fdata-sections -mcpu=cortex-m3 -mthumb -D__NEWLIB__ -MMD -MP -MF"src/sct_15xx.d" -MT"src/sct_15xx.o" -MT"src/sct_15xx.d" -o "src/sct_15xx.o" "../src/sct_15xx.c"
+Finished building: ../src/sct_15xx.c
+ 
+Building file: ../src/sct_pwm_15xx.c
+Invoking: MCU C Compiler
+arm-none-eabi-gcc -DDEBUG -D__CODE_RED -D__USE_LPCOPEN -DCORE_M3 -D__NEWLIB__ -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\lpc_chip_15xx\inc" -O0 -g3 -Wall -c -fmessage-length=0 -fno-builtin -ffunction-sections -fdata-sections -mcpu=cortex-m3 -mthumb -D__NEWLIB__ -MMD -MP -MF"src/sct_pwm_15xx.d" -MT"src/sct_pwm_15xx.o" -MT"src/sct_pwm_15xx.d" -o "src/sct_pwm_15xx.o" "../src/sct_pwm_15xx.c"
+Finished building: ../src/sct_pwm_15xx.c
+ 
+Building file: ../src/sctipu_15xx.c
+Invoking: MCU C Compiler
+arm-none-eabi-gcc -DDEBUG -D__CODE_RED -D__USE_LPCOPEN -DCORE_M3 -D__NEWLIB__ -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\lpc_chip_15xx\inc" -O0 -g3 -Wall -c -fmessage-length=0 -fno-builtin -ffunction-sections -fdata-sections -mcpu=cortex-m3 -mthumb -D__NEWLIB__ -MMD -MP -MF"src/sctipu_15xx.d" -MT"src/sctipu_15xx.o" -MT"src/sctipu_15xx.d" -o "src/sctipu_15xx.o" "../src/sctipu_15xx.c"
+Finished building: ../src/sctipu_15xx.c
+ 
+Building file: ../src/spi_15xx.c
+Invoking: MCU C Compiler
+arm-none-eabi-gcc -DDEBUG -D__CODE_RED -D__USE_LPCOPEN -DCORE_M3 -D__NEWLIB__ -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\lpc_chip_15xx\inc" -O0 -g3 -Wall -c -fmessage-length=0 -fno-builtin -ffunction-sections -fdata-sections -mcpu=cortex-m3 -mthumb -D__NEWLIB__ -MMD -MP -MF"src/spi_15xx.d" -MT"src/spi_15xx.o" -MT"src/spi_15xx.d" -o "src/spi_15xx.o" "../src/spi_15xx.c"
+Finished building: ../src/spi_15xx.c
+ 
+Building file: ../src/stopwatch_15xx.c
+Invoking: MCU C Compiler
+arm-none-eabi-gcc -DDEBUG -D__CODE_RED -D__USE_LPCOPEN -DCORE_M3 -D__NEWLIB__ -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\lpc_chip_15xx\inc" -O0 -g3 -Wall -c -fmessage-length=0 -fno-builtin -ffunction-sections -fdata-sections -mcpu=cortex-m3 -mthumb -D__NEWLIB__ -MMD -MP -MF"src/stopwatch_15xx.d" -MT"src/stopwatch_15xx.o" -MT"src/stopwatch_15xx.d" -o "src/stopwatch_15xx.o" "../src/stopwatch_15xx.c"
+Finished building: ../src/stopwatch_15xx.c
+ 
+Building file: ../src/swm_15xx.c
+Invoking: MCU C Compiler
+arm-none-eabi-gcc -DDEBUG -D__CODE_RED -D__USE_LPCOPEN -DCORE_M3 -D__NEWLIB__ -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\lpc_chip_15xx\inc" -O0 -g3 -Wall -c -fmessage-length=0 -fno-builtin -ffunction-sections -fdata-sections -mcpu=cortex-m3 -mthumb -D__NEWLIB__ -MMD -MP -MF"src/swm_15xx.d" -MT"src/swm_15xx.o" -MT"src/swm_15xx.d" -o "src/swm_15xx.o" "../src/swm_15xx.c"
+Finished building: ../src/swm_15xx.c
+ 
+Building file: ../src/sysctl_15xx.c
+Invoking: MCU C Compiler
+arm-none-eabi-gcc -DDEBUG -D__CODE_RED -D__USE_LPCOPEN -DCORE_M3 -D__NEWLIB__ -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\lpc_chip_15xx\inc" -O0 -g3 -Wall -c -fmessage-length=0 -fno-builtin -ffunction-sections -fdata-sections -mcpu=cortex-m3 -mthumb -D__NEWLIB__ -MMD -MP -MF"src/sysctl_15xx.d" -MT"src/sysctl_15xx.o" -MT"src/sysctl_15xx.d" -o "src/sysctl_15xx.o" "../src/sysctl_15xx.c"
+Finished building: ../src/sysctl_15xx.c
+ 
+Building file: ../src/sysinit_15xx.c
+Invoking: MCU C Compiler
+arm-none-eabi-gcc -DDEBUG -D__CODE_RED -D__USE_LPCOPEN -DCORE_M3 -D__NEWLIB__ -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\lpc_chip_15xx\inc" -O0 -g3 -Wall -c -fmessage-length=0 -fno-builtin -ffunction-sections -fdata-sections -mcpu=cortex-m3 -mthumb -D__NEWLIB__ -MMD -MP -MF"src/sysinit_15xx.d" -MT"src/sysinit_15xx.o" -MT"src/sysinit_15xx.d" -o "src/sysinit_15xx.o" "../src/sysinit_15xx.c"
+Finished building: ../src/sysinit_15xx.c
+ 
+Building file: ../src/uart_15xx.c
+Invoking: MCU C Compiler
+arm-none-eabi-gcc -DDEBUG -D__CODE_RED -D__USE_LPCOPEN -DCORE_M3 -D__NEWLIB__ -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\lpc_chip_15xx\inc" -O0 -g3 -Wall -c -fmessage-length=0 -fno-builtin -ffunction-sections -fdata-sections -mcpu=cortex-m3 -mthumb -D__NEWLIB__ -MMD -MP -MF"src/uart_15xx.d" -MT"src/uart_15xx.o" -MT"src/uart_15xx.d" -o "src/uart_15xx.o" "../src/uart_15xx.c"
+Finished building: ../src/uart_15xx.c
+ 
+Building file: ../src/wwdt_15xx.c
+Invoking: MCU C Compiler
+arm-none-eabi-gcc -DDEBUG -D__CODE_RED -D__USE_LPCOPEN -DCORE_M3 -D__NEWLIB__ -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\lpc_chip_15xx\inc" -O0 -g3 -Wall -c -fmessage-length=0 -fno-builtin -ffunction-sections -fdata-sections -mcpu=cortex-m3 -mthumb -D__NEWLIB__ -MMD -MP -MF"src/wwdt_15xx.d" -MT"src/wwdt_15xx.o" -MT"src/wwdt_15xx.d" -o "src/wwdt_15xx.o" "../src/wwdt_15xx.c"
+Finished building: ../src/wwdt_15xx.c
+ 
+Building target: liblpc_chip_15xx.a
+Invoking: MCU Archiver
+arm-none-eabi-ar -r  "liblpc_chip_15xx.a"  ./src/acmp_15xx.o ./src/adc_15xx.o ./src/chip_15xx.o ./src/clock_15xx.o ./src/crc_15xx.o ./src/dac_15xx.o ./src/dma_15xx.o ./src/eeprom.o ./src/gpio_15xx.o ./src/i2c_common_15xx.o ./src/i2cm_15xx.o ./src/i2cs_15xx.o ./src/iap.o ./src/iocon_15xx.o ./src/pinint_15xx.o ./src/pmu_15xx.o ./src/ring_buffer.o ./src/ritimer_15xx.o ./src/rtc_15xx.o ./src/sct_15xx.o ./src/sct_pwm_15xx.o ./src/sctipu_15xx.o ./src/spi_15xx.o ./src/stopwatch_15xx.o ./src/swm_15xx.o ./src/sysctl_15xx.o ./src/sysinit_15xx.o ./src/uart_15xx.o ./src/wwdt_15xx.o   
+c:\nxp\MCUXpressoIDE_10.1.1_606\ide\tools\bin\arm-none-eabi-ar.exe: creating liblpc_chip_15xx.a
+Finished building target: liblpc_chip_15xx.a
+ 
+make --no-print-directory post-build
+Performing post-build steps
+arm-none-eabi-size "liblpc_chip_15xx.a" ; # arm-none-eabi-objdump -h -S "liblpc_chip_15xx.a" >"liblpc_chip_15xx.lss"
+   text	   data	    bss	    dec	    hex	filename
+    608	      0	      0	    608	    260	acmp_15xx.o (ex liblpc_chip_15xx.a)
+    790	      0	      0	    790	    316	adc_15xx.o (ex liblpc_chip_15xx.a)
+    298	      0	      0	    298	    12a	chip_15xx.o (ex liblpc_chip_15xx.a)
+   1662	      0	      0	   1662	    67e	clock_15xx.o (ex liblpc_chip_15xx.a)
+    494	      0	      0	    494	    1ee	crc_15xx.o (ex liblpc_chip_15xx.a)
+     60	      0	      0	     60	     3c	dac_15xx.o (ex liblpc_chip_15xx.a)
+    294	      0	      0	    294	    126	dma_15xx.o (ex liblpc_chip_15xx.a)
+    192	      0	      0	    192	     c0	eeprom.o (ex liblpc_chip_15xx.a)
+    684	      0	      0	    684	    2ac	gpio_15xx.o (ex liblpc_chip_15xx.a)
+     84	      0	      0	     84	     54	i2c_common_15xx.o (ex liblpc_chip_15xx.a)
+    864	      0	      0	    864	    360	i2cm_15xx.o (ex liblpc_chip_15xx.a)
+    440	      0	      0	    440	    1b8	i2cs_15xx.o (ex liblpc_chip_15xx.a)
+    600	      0	      0	    600	    258	iap.o (ex liblpc_chip_15xx.a)
+    122	      0	      0	    122	     7a	iocon_15xx.o (ex liblpc_chip_15xx.a)
+      0	      0	      0	      0	      0	pinint_15xx.o (ex liblpc_chip_15xx.a)
+    288	      0	      0	    288	    120	pmu_15xx.o (ex liblpc_chip_15xx.a)
+    962	      0	      0	    962	    3c2	ring_buffer.o (ex liblpc_chip_15xx.a)
+    624	      0	      0	    624	    270	ritimer_15xx.o (ex liblpc_chip_15xx.a)
+      0	      0	      0	      0	      0	rtc_15xx.o (ex liblpc_chip_15xx.a)
+    318	      0	      0	    318	    13e	sct_15xx.o (ex liblpc_chip_15xx.a)
+    414	      0	      0	    414	    19e	sct_pwm_15xx.o (ex liblpc_chip_15xx.a)
+    140	      0	      0	    140	     8c	sctipu_15xx.o (ex liblpc_chip_15xx.a)
+   1766	      0	      0	   1766	    6e6	spi_15xx.o (ex liblpc_chip_15xx.a)
+    328	      0	     12	    340	    154	stopwatch_15xx.o (ex liblpc_chip_15xx.a)
+    356	      0	      0	    356	    164	swm_15xx.o (ex liblpc_chip_15xx.a)
+    434	      0	      0	    434	    1b2	sysctl_15xx.o (ex liblpc_chip_15xx.a)
+    414	      0	      0	    414	    19e	sysinit_15xx.o (ex liblpc_chip_15xx.a)
+   1114	      0	      0	   1114	    45a	uart_15xx.o (ex liblpc_chip_15xx.a)
+    114	      0	      0	    114	     72	wwdt_15xx.o (ex liblpc_chip_15xx.a)
+ 
+11:52:44 **** Clean-only build of configuration Debug for project FreeRTOS ****
+make -r clean 
+rm -rf  ./src/portable/MemMang/heap_3.o  ./src/portable/GCC/ARM_CM3/port.o  ./src/FreeRTOSCommonHooks.o ./src/croutine.o ./src/event_groups.o ./src/list.o ./src/queue.o ./src/stream_buffer.o ./src/tasks.o ./src/timers.o  ./src/portable/MemMang/heap_3.d  ./src/portable/GCC/ARM_CM3/port.d  ./src/FreeRTOSCommonHooks.d ./src/croutine.d ./src/event_groups.d ./src/list.d ./src/queue.d ./src/stream_buffer.d ./src/tasks.d ./src/timers.d  libFreeRTOS.a
+ 
+11:52:44 **** Build of configuration Debug for project FreeRTOS ****
+make -r all 
+Building file: ../src/portable/MemMang/heap_3.c
+Invoking: MCU C Compiler
+arm-none-eabi-gcc -DDEBUG -D__CODE_RED -DCORE_M3 -D__USE_LPCOPEN -D__LPC15XX__ -D__NEWLIB__ -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\FreeRTOS\inc" -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\lpc_board_nxp_lpcxpresso_1549\inc" -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\lpc_chip_15xx\inc" -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\FreeRTOS\src\include" -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\FreeRTOS\src\portable\GCC\ARM_CM3" -O0 -fno-common -g3 -Wall -c -fmessage-length=0 -fno-builtin -ffunction-sections -fdata-sections -mcpu=cortex-m3 -mthumb -D__NEWLIB__ -MMD -MP -MF"src/portable/MemMang/heap_3.d" -MT"src/portable/MemMang/heap_3.o" -MT"src/portable/MemMang/heap_3.d" -o "src/portable/MemMang/heap_3.o" "../src/portable/MemMang/heap_3.c"
+Finished building: ../src/portable/MemMang/heap_3.c
+ 
+Building file: ../src/portable/GCC/ARM_CM3/port.c
+Invoking: MCU C Compiler
+arm-none-eabi-gcc -DDEBUG -D__CODE_RED -DCORE_M3 -D__USE_LPCOPEN -D__LPC15XX__ -D__NEWLIB__ -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\FreeRTOS\inc" -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\lpc_board_nxp_lpcxpresso_1549\inc" -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\lpc_chip_15xx\inc" -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\FreeRTOS\src\include" -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\FreeRTOS\src\portable\GCC\ARM_CM3" -O0 -fno-common -g3 -Wall -c -fmessage-length=0 -fno-builtin -ffunction-sections -fdata-sections -mcpu=cortex-m3 -mthumb -D__NEWLIB__ -MMD -MP -MF"src/portable/GCC/ARM_CM3/port.d" -MT"src/portable/GCC/ARM_CM3/port.o" -MT"src/portable/GCC/ARM_CM3/port.d" -o "src/portable/GCC/ARM_CM3/port.o" "../src/portable/GCC/ARM_CM3/port.c"
+Finished building: ../src/portable/GCC/ARM_CM3/port.c
+ 
+Building file: ../src/FreeRTOSCommonHooks.c
+Invoking: MCU C Compiler
+arm-none-eabi-gcc -DDEBUG -D__CODE_RED -DCORE_M3 -D__USE_LPCOPEN -D__LPC15XX__ -D__NEWLIB__ -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\FreeRTOS\inc" -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\lpc_board_nxp_lpcxpresso_1549\inc" -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\lpc_chip_15xx\inc" -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\FreeRTOS\src\include" -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\FreeRTOS\src\portable\GCC\ARM_CM3" -O0 -fno-common -g3 -Wall -c -fmessage-length=0 -fno-builtin -ffunction-sections -fdata-sections -mcpu=cortex-m3 -mthumb -D__NEWLIB__ -MMD -MP -MF"src/FreeRTOSCommonHooks.d" -MT"src/FreeRTOSCommonHooks.o" -MT"src/FreeRTOSCommonHooks.d" -o "src/FreeRTOSCommonHooks.o" "../src/FreeRTOSCommonHooks.c"
+Finished building: ../src/FreeRTOSCommonHooks.c
+ 
+Building file: ../src/croutine.c
+Invoking: MCU C Compiler
+arm-none-eabi-gcc -DDEBUG -D__CODE_RED -DCORE_M3 -D__USE_LPCOPEN -D__LPC15XX__ -D__NEWLIB__ -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\FreeRTOS\inc" -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\lpc_board_nxp_lpcxpresso_1549\inc" -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\lpc_chip_15xx\inc" -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\FreeRTOS\src\include" -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\FreeRTOS\src\portable\GCC\ARM_CM3" -O0 -fno-common -g3 -Wall -c -fmessage-length=0 -fno-builtin -ffunction-sections -fdata-sections -mcpu=cortex-m3 -mthumb -D__NEWLIB__ -MMD -MP -MF"src/croutine.d" -MT"src/croutine.o" -MT"src/croutine.d" -o "src/croutine.o" "../src/croutine.c"
+Finished building: ../src/croutine.c
+ 
+Building file: ../src/event_groups.c
+Invoking: MCU C Compiler
+arm-none-eabi-gcc -DDEBUG -D__CODE_RED -DCORE_M3 -D__USE_LPCOPEN -D__LPC15XX__ -D__NEWLIB__ -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\FreeRTOS\inc" -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\lpc_board_nxp_lpcxpresso_1549\inc" -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\lpc_chip_15xx\inc" -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\FreeRTOS\src\include" -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\FreeRTOS\src\portable\GCC\ARM_CM3" -O0 -fno-common -g3 -Wall -c -fmessage-length=0 -fno-builtin -ffunction-sections -fdata-sections -mcpu=cortex-m3 -mthumb -D__NEWLIB__ -MMD -MP -MF"src/event_groups.d" -MT"src/event_groups.o" -MT"src/event_groups.d" -o "src/event_groups.o" "../src/event_groups.c"
+Finished building: ../src/event_groups.c
+ 
+Building file: ../src/list.c
+Invoking: MCU C Compiler
+arm-none-eabi-gcc -DDEBUG -D__CODE_RED -DCORE_M3 -D__USE_LPCOPEN -D__LPC15XX__ -D__NEWLIB__ -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\FreeRTOS\inc" -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\lpc_board_nxp_lpcxpresso_1549\inc" -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\lpc_chip_15xx\inc" -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\FreeRTOS\src\include" -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\FreeRTOS\src\portable\GCC\ARM_CM3" -O0 -fno-common -g3 -Wall -c -fmessage-length=0 -fno-builtin -ffunction-sections -fdata-sections -mcpu=cortex-m3 -mthumb -D__NEWLIB__ -MMD -MP -MF"src/list.d" -MT"src/list.o" -MT"src/list.d" -o "src/list.o" "../src/list.c"
+Finished building: ../src/list.c
+ 
+Building file: ../src/queue.c
+Invoking: MCU C Compiler
+arm-none-eabi-gcc -DDEBUG -D__CODE_RED -DCORE_M3 -D__USE_LPCOPEN -D__LPC15XX__ -D__NEWLIB__ -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\FreeRTOS\inc" -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\lpc_board_nxp_lpcxpresso_1549\inc" -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\lpc_chip_15xx\inc" -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\FreeRTOS\src\include" -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\FreeRTOS\src\portable\GCC\ARM_CM3" -O0 -fno-common -g3 -Wall -c -fmessage-length=0 -fno-builtin -ffunction-sections -fdata-sections -mcpu=cortex-m3 -mthumb -D__NEWLIB__ -MMD -MP -MF"src/queue.d" -MT"src/queue.o" -MT"src/queue.d" -o "src/queue.o" "../src/queue.c"
+Finished building: ../src/queue.c
+ 
+Building file: ../src/stream_buffer.c
+Invoking: MCU C Compiler
+arm-none-eabi-gcc -DDEBUG -D__CODE_RED -DCORE_M3 -D__USE_LPCOPEN -D__LPC15XX__ -D__NEWLIB__ -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\FreeRTOS\inc" -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\lpc_board_nxp_lpcxpresso_1549\inc" -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\lpc_chip_15xx\inc" -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\FreeRTOS\src\include" -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\FreeRTOS\src\portable\GCC\ARM_CM3" -O0 -fno-common -g3 -Wall -c -fmessage-length=0 -fno-builtin -ffunction-sections -fdata-sections -mcpu=cortex-m3 -mthumb -D__NEWLIB__ -MMD -MP -MF"src/stream_buffer.d" -MT"src/stream_buffer.o" -MT"src/stream_buffer.d" -o "src/stream_buffer.o" "../src/stream_buffer.c"
+Finished building: ../src/stream_buffer.c
+ 
+Building file: ../src/tasks.c
+Invoking: MCU C Compiler
+arm-none-eabi-gcc -DDEBUG -D__CODE_RED -DCORE_M3 -D__USE_LPCOPEN -D__LPC15XX__ -D__NEWLIB__ -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\FreeRTOS\inc" -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\lpc_board_nxp_lpcxpresso_1549\inc" -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\lpc_chip_15xx\inc" -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\FreeRTOS\src\include" -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\FreeRTOS\src\portable\GCC\ARM_CM3" -O0 -fno-common -g3 -Wall -c -fmessage-length=0 -fno-builtin -ffunction-sections -fdata-sections -mcpu=cortex-m3 -mthumb -D__NEWLIB__ -MMD -MP -MF"src/tasks.d" -MT"src/tasks.o" -MT"src/tasks.d" -o "src/tasks.o" "../src/tasks.c"
+Finished building: ../src/tasks.c
+ 
+Building file: ../src/timers.c
+Invoking: MCU C Compiler
+arm-none-eabi-gcc -DDEBUG -D__CODE_RED -DCORE_M3 -D__USE_LPCOPEN -D__LPC15XX__ -D__NEWLIB__ -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\FreeRTOS\inc" -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\lpc_board_nxp_lpcxpresso_1549\inc" -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\lpc_chip_15xx\inc" -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\FreeRTOS\src\include" -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\FreeRTOS\src\portable\GCC\ARM_CM3" -O0 -fno-common -g3 -Wall -c -fmessage-length=0 -fno-builtin -ffunction-sections -fdata-sections -mcpu=cortex-m3 -mthumb -D__NEWLIB__ -MMD -MP -MF"src/timers.d" -MT"src/timers.o" -MT"src/timers.d" -o "src/timers.o" "../src/timers.c"
+Finished building: ../src/timers.c
+ 
+Building target: libFreeRTOS.a
+Invoking: MCU Archiver
+arm-none-eabi-ar -r  "libFreeRTOS.a"  ./src/portable/MemMang/heap_3.o  ./src/portable/GCC/ARM_CM3/port.o  ./src/FreeRTOSCommonHooks.o ./src/croutine.o ./src/event_groups.o ./src/list.o ./src/queue.o ./src/stream_buffer.o ./src/tasks.o ./src/timers.o   
+c:\nxp\MCUXpressoIDE_10.1.1_606\ide\tools\bin\arm-none-eabi-ar.exe: creating libFreeRTOS.a
+Finished building target: libFreeRTOS.a
+ 
+make --no-print-directory post-build
+Performing post-build steps
+arm-none-eabi-size "libFreeRTOS.a" ; # arm-none-eabi-objdump -h -S "libFreeRTOS.a" >"libFreeRTOS.lss"
+   text	   data	    bss	    dec	    hex	filename
+     80	      0	      0	     80	     50	heap_3.o (ex libFreeRTOS.a)
+    582	      4	      0	    586	    24a	port.o (ex libFreeRTOS.a)
+    122	      0	      0	    122	     7a	FreeRTOSCommonHooks.o (ex libFreeRTOS.a)
+      0	      0	      0	      0	      0	croutine.o (ex libFreeRTOS.a)
+   1150	      0	      0	   1150	    47e	event_groups.o (ex libFreeRTOS.a)
+    350	      0	      0	    350	    15e	list.o (ex libFreeRTOS.a)
+   3756	      0	     80	   3836	    efc	queue.o (ex libFreeRTOS.a)
+   2216	      0	      0	   2216	    8a8	stream_buffer.o (ex libFreeRTOS.a)
+   8322	      0	    320	   8642	   21c2	tasks.o (ex libFreeRTOS.a)
+      0	      0	      0	      0	      0	timers.o (ex libFreeRTOS.a)
+ 
+11:52:51 **** Clean-only build of configuration Debug for project usb_cdc ****
+make -r -j8 clean 
+rm -rf  ./src/DigitalIoPin.o ./src/Fmutex.o ./src/GcodeParser.o ./src/ITM_write.o ./src/cdc_desc.o ./src/cdc_main.o ./src/cdc_vcom.o ./src/cr_cpp_config.o ./src/cr_startup_lpc15xx.o ./src/crp.o ./src/sysinit.o ./src/usb_cdc.o  ./src/DigitalIoPin.d ./src/Fmutex.d ./src/GcodeParser.d ./src/cr_cpp_config.d ./src/cr_startup_lpc15xx.d ./src/usb_cdc.d  ./src/ITM_write.d ./src/cdc_desc.d ./src/cdc_main.d ./src/cdc_vcom.d ./src/crp.d ./src/sysinit.d  usb_cdc.axf
+ 
+11:52:52 **** Build of configuration Debug for project usb_cdc ****
+make -r -j8 all 
+Building file: ../src/DigitalIoPin.cpp
+Building file: ../src/Fmutex.cpp
+Building file: ../src/GcodeParser.cpp
+Building file: ../src/ITM_write.c
+Building file: ../src/cdc_desc.c
+Invoking: MCU C++ Compiler
+Building file: ../src/cdc_main.c
+arm-none-eabi-c++ -std=c++11 -D__NEWLIB__ -DDEBUG -D__CODE_RED -DCORE_M3 -D__USE_LPCOPEN -DCPP_USE_HEAP -D__LPC15XX__ -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\usb_cdc\inc" -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\lpc_board_nxp_lpcxpresso_1549\inc" -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\lpc_chip_15xx\inc" -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\lpc_chip_15xx\inc\usbd" -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\FreeRTOS\inc" -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\FreeRTOS\src\include" -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\FreeRTOS\src\portable\GCC\ARM_CM3" -O0 -fno-common -g3 -Wall -c -fmessage-length=0 -fno-builtin -ffunction-sections -fdata-sections -fno-rtti -fno-exceptions -mcpu=cortex-m3 -mthumb -D__NEWLIB__ -MMD -MP -MF"src/DigitalIoPin.d" -MT"src/DigitalIoPin.o" -MT"src/DigitalIoPin.d" -o "src/DigitalIoPin.o" "../src/DigitalIoPin.cpp"
+make: stat: src/cr_cpp_config.o: Bad file number
+Invoking: MCU C++ Compiler
+Invoking: MCU C++ Compiler
+Invoking: MCU C Compiler
+arm-none-eabi-c++ -std=c++11 -D__NEWLIB__ -DDEBUG -D__CODE_RED -DCORE_M3 -D__USE_LPCOPEN -DCPP_USE_HEAP -D__LPC15XX__ -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\usb_cdc\inc" -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\lpc_board_nxp_lpcxpresso_1549\inc" -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\lpc_chip_15xx\inc" -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\lpc_chip_15xx\inc\usbd" -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\FreeRTOS\inc" -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\FreeRTOS\src\include" -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\FreeRTOS\src\portable\GCC\ARM_CM3" -O0 -fno-common -g3 -Wall -c -fmessage-length=0 -fno-builtin -ffunction-sections -fdata-sections -fno-rtti -fno-exceptions -mcpu=cortex-m3 -mthumb -D__NEWLIB__ -MMD -MP -MF"src/Fmutex.d" -MT"src/Fmutex.o" -MT"src/Fmutex.d" -o "src/Fmutex.o" "../src/Fmutex.cpp"
+Invoking: MCU C Compiler
+arm-none-eabi-c++ -std=c++11 -D__NEWLIB__ -DDEBUG -D__CODE_RED -DCORE_M3 -D__USE_LPCOPEN -DCPP_USE_HEAP -D__LPC15XX__ -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\usb_cdc\inc" -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\lpc_board_nxp_lpcxpresso_1549\inc" -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\lpc_chip_15xx\inc" -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\lpc_chip_15xx\inc\usbd" -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\FreeRTOS\inc" -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\FreeRTOS\src\include" -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\FreeRTOS\src\portable\GCC\ARM_CM3" -O0 -fno-common -g3 -Wall -c -fmessage-length=0 -fno-builtin -ffunction-sections -fdata-sections -fno-rtti -fno-exceptions -mcpu=cortex-m3 -mthumb -D__NEWLIB__ -MMD -MP -MF"src/GcodeParser.d" -MT"src/GcodeParser.o" -MT"src/GcodeParser.d" -o "src/GcodeParser.o" "../src/GcodeParser.cpp"
+Invoking: MCU C Compiler
+Building file: ../src/cdc_vcom.c
+arm-none-eabi-gcc -D__NEWLIB__ -DDEBUG -D__CODE_RED -DCORE_M3 -D__USE_LPCOPEN -DCPP_USE_HEAP -D__LPC15XX__ -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\usb_cdc\inc" -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\lpc_board_nxp_lpcxpresso_1549\inc" -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\lpc_chip_15xx\inc" -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\lpc_chip_15xx\inc\usbd" -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\FreeRTOS\inc" -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\FreeRTOS\src\include" -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\FreeRTOS\src\portable\GCC\ARM_CM3" -O0 -fno-common -g3 -Wall -c -fmessage-length=0 -fno-builtin -ffunction-sections -fdata-sections -mcpu=cortex-m3 -mthumb -D__NEWLIB__ -MMD -MP -MF"src/ITM_write.d" -MT"src/ITM_write.o" -MT"src/ITM_write.d" -o "src/ITM_write.o" "../src/ITM_write.c"
+arm-none-eabi-gcc -D__NEWLIB__ -DDEBUG -D__CODE_RED -DCORE_M3 -D__USE_LPCOPEN -DCPP_USE_HEAP -D__LPC15XX__ -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\usb_cdc\inc" -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\lpc_board_nxp_lpcxpresso_1549\inc" -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\lpc_chip_15xx\inc" -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\lpc_chip_15xx\inc\usbd" -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\FreeRTOS\inc" -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\FreeRTOS\src\include" -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\FreeRTOS\src\portable\GCC\ARM_CM3" -O0 -fno-common -g3 -Wall -c -fmessage-length=0 -fno-builtin -ffunction-sections -fdata-sections -mcpu=cortex-m3 -mthumb -D__NEWLIB__ -MMD -MP -MF"src/cdc_desc.d" -MT"src/cdc_desc.o" -MT"src/cdc_desc.d" -o "src/cdc_desc.o" "../src/cdc_desc.c"
+arm-none-eabi-gcc -D__NEWLIB__ -DDEBUG -D__CODE_RED -DCORE_M3 -D__USE_LPCOPEN -DCPP_USE_HEAP -D__LPC15XX__ -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\usb_cdc\inc" -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\lpc_board_nxp_lpcxpresso_1549\inc" -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\lpc_chip_15xx\inc" -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\lpc_chip_15xx\inc\usbd" -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\FreeRTOS\inc" -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\FreeRTOS\src\include" -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\FreeRTOS\src\portable\GCC\ARM_CM3" -O0 -fno-common -g3 -Wall -c -fmessage-length=0 -fno-builtin -ffunction-sections -fdata-sections -mcpu=cortex-m3 -mthumb -D__NEWLIB__ -MMD -MP -MF"src/cdc_main.d" -MT"src/cdc_main.o" -MT"src/cdc_main.d" -o "src/cdc_main.o" "../src/cdc_main.c"
+Invoking: MCU C Compiler
+arm-none-eabi-gcc -D__NEWLIB__ -DDEBUG -D__CODE_RED -DCORE_M3 -D__USE_LPCOPEN -DCPP_USE_HEAP -D__LPC15XX__ -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\usb_cdc\inc" -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\lpc_board_nxp_lpcxpresso_1549\inc" -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\lpc_chip_15xx\inc" -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\lpc_chip_15xx\inc\usbd" -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\FreeRTOS\inc" -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\FreeRTOS\src\include" -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\FreeRTOS\src\portable\GCC\ARM_CM3" -O0 -fno-common -g3 -Wall -c -fmessage-length=0 -fno-builtin -ffunction-sections -fdata-sections -mcpu=cortex-m3 -mthumb -D__NEWLIB__ -MMD -MP -MF"src/cdc_vcom.d" -MT"src/cdc_vcom.o" -MT"src/cdc_vcom.d" -o "src/cdc_vcom.o" "../src/cdc_vcom.c"
+Building file: ../src/cr_cpp_config.cpp
+Invoking: MCU C++ Compiler
+arm-none-eabi-c++ -std=c++11 -D__NEWLIB__ -DDEBUG -D__CODE_RED -DCORE_M3 -D__USE_LPCOPEN -DCPP_USE_HEAP -D__LPC15XX__ -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\usb_cdc\inc" -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\lpc_board_nxp_lpcxpresso_1549\inc" -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\lpc_chip_15xx\inc" -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\lpc_chip_15xx\inc\usbd" -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\FreeRTOS\inc" -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\FreeRTOS\src\include" -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\FreeRTOS\src\portable\GCC\ARM_CM3" -O0 -fno-common -g3 -Wall -c -fmessage-length=0 -fno-builtin -ffunction-sections -fdata-sections -fno-rtti -fno-exceptions -mcpu=cortex-m3 -mthumb -D__NEWLIB__ -MMD -MP -MF"src/cr_cpp_config.d" -MT"src/cr_cpp_config.o" -MT"src/cr_cpp_config.d" -o "src/cr_cpp_config.o" "../src/cr_cpp_config.cpp"
+Finished building: ../src/cdc_desc.c
+ 
+Building file: ../src/cr_startup_lpc15xx.cpp
+Finished building: ../src/ITM_write.c
+Invoking: MCU C++ Compiler
+arm-none-eabi-c++ -std=c++11 -D__NEWLIB__ -DDEBUG -D__CODE_RED -DCORE_M3 -D__USE_LPCOPEN -DCPP_USE_HEAP -D__LPC15XX__ -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\usb_cdc\inc" -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\lpc_board_nxp_lpcxpresso_1549\inc" -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\lpc_chip_15xx\inc" -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\lpc_chip_15xx\inc\usbd" -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\FreeRTOS\inc" -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\FreeRTOS\src\include" -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\FreeRTOS\src\portable\GCC\ARM_CM3" -O0 -fno-common -g3 -Wall -c -fmessage-length=0 -fno-builtin -ffunction-sections -fdata-sections -fno-rtti -fno-exceptions -mcpu=cortex-m3 -mthumb -D__NEWLIB__ -MMD -MP -MF"src/cr_startup_lpc15xx.d" -MT"src/cr_startup_lpc15xx.o" -MT"src/cr_startup_lpc15xx.d" -o "src/cr_startup_lpc15xx.o" "../src/cr_startup_lpc15xx.cpp"
+ 
+Finished building: ../src/DigitalIoPin.cpp
+Finished building: ../src/cr_cpp_config.cpp
+Building file: ../src/crp.c
+ 
+ 
+Finished building: ../src/Fmutex.cpp
+Building file: ../src/sysinit.c
+Invoking: MCU C Compiler
+arm-none-eabi-gcc -D__NEWLIB__ -DDEBUG -D__CODE_RED -DCORE_M3 -D__USE_LPCOPEN -DCPP_USE_HEAP -D__LPC15XX__ -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\usb_cdc\inc" -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\lpc_board_nxp_lpcxpresso_1549\inc" -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\lpc_chip_15xx\inc" -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\lpc_chip_15xx\inc\usbd" -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\FreeRTOS\inc" -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\FreeRTOS\src\include" -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\FreeRTOS\src\portable\GCC\ARM_CM3" -O0 -fno-common -g3 -Wall -c -fmessage-length=0 -fno-builtin -ffunction-sections -fdata-sections -mcpu=cortex-m3 -mthumb -D__NEWLIB__ -MMD -MP -MF"src/crp.d" -MT"src/crp.o" -MT"src/crp.d" -o "src/crp.o" "../src/crp.c"
+Building file: ../src/usb_cdc.cpp
+In file included from C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\usb_cdc\inc/GcodeParser.h:4:0,
+ 
+                 from ../src/GcodeParser.cpp:1:
+C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\usb_cdc\inc/CommandStruct.h:4:1: warning: 'typedef' was ignored in this declaration
+ typedef struct CommandStruct {
+ ^~~~~~~
+../src/GcodeParser.cpp: In member function 'void GcodeParser::tokenizeInput(const string&)':
+../src/GcodeParser.cpp:58:14: warning: comparison between signed and unsigned integer expressions [-Wsign-compare]
+Invoking: MCU C Compiler
+   while (pos != string::npos) {
+          ~~~~^~~~~~~~~
+../src/GcodeParser.cpp:64:17: warning: comparison between signed and unsigned integer expressions [-Wsign-compare]
+    else if (pos != string::npos) {
+             ~~~~^~~~~~~~~
+../src/GcodeParser.cpp: In member function 'bool GcodeParser::parseG1ParameterELITELEVEL(const string&, const char&, int&)':
+../src/GcodeParser.cpp:249:10: warning: comparison between signed and unsigned integer expressions [-Wsign-compare]
+  if (res == (len-3) ) {
+      ~~~~^~~~~~~~~~
+arm-none-eabi-gcc -D__NEWLIB__ -DDEBUG -D__CODE_RED -DCORE_M3 -D__USE_LPCOPEN -DCPP_USE_HEAP -D__LPC15XX__ -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\usb_cdc\inc" -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\lpc_board_nxp_lpcxpresso_1549\inc" -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\lpc_chip_15xx\inc" -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\lpc_chip_15xx\inc\usbd" -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\FreeRTOS\inc" -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\FreeRTOS\src\include" -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\FreeRTOS\src\portable\GCC\ARM_CM3" -O0 -fno-common -g3 -Wall -c -fmessage-length=0 -fno-builtin -ffunction-sections -fdata-sections -mcpu=cortex-m3 -mthumb -D__NEWLIB__ -MMD -MP -MF"src/sysinit.d" -MT"src/sysinit.o" -MT"src/sysinit.d" -o "src/sysinit.o" "../src/sysinit.c"
+Invoking: MCU C++ Compiler
+arm-none-eabi-c++ -std=c++11 -D__NEWLIB__ -DDEBUG -D__CODE_RED -DCORE_M3 -D__USE_LPCOPEN -DCPP_USE_HEAP -D__LPC15XX__ -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\usb_cdc\inc" -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\lpc_board_nxp_lpcxpresso_1549\inc" -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\lpc_chip_15xx\inc" -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\lpc_chip_15xx\inc\usbd" -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\FreeRTOS\inc" -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\FreeRTOS\src\include" -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\FreeRTOS\src\portable\GCC\ARM_CM3" -O0 -fno-common -g3 -Wall -c -fmessage-length=0 -fno-builtin -ffunction-sections -fdata-sections -fno-rtti -fno-exceptions -mcpu=cortex-m3 -mthumb -D__NEWLIB__ -MMD -MP -MF"src/usb_cdc.d" -MT"src/usb_cdc.o" -MT"src/usb_cdc.d" -o "src/usb_cdc.o" "../src/usb_cdc.cpp"
+Finished building: ../src/cdc_main.c
+Finished building: ../src/cdc_vcom.c
+ 
+ 
+Finished building: ../src/cr_startup_lpc15xx.cpp
+ 
+Finished building: ../src/crp.c
+ 
+Finished building: ../src/sysinit.c
+ 
+Finished building: ../src/GcodeParser.cpp
+ 
+In file included from C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\usb_cdc\inc/GcodeParser.h:4:0,
+                 from ../src/usb_cdc.cpp:37:
+C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\usb_cdc\inc/CommandStruct.h:4:1: warning: 'typedef' was ignored in this declaration
+ typedef struct CommandStruct {
+ ^~~~~~~
+../src/usb_cdc.cpp: In function 'void receive_task(void*)':
+../src/usb_cdc.cpp:101:6: warning: unused variable 'initlen' [-Wunused-variable]
+  int initlen= strlen(initialMessage);
+      ^~~~~~~
+../src/usb_cdc.cpp: At global scope:
+../src/usb_cdc.cpp:95:13: warning: 'void receive_task(void*)' defined but not used [-Wunused-function]
+ static void receive_task(void *pvParameters) {
+             ^~~~~~~~~~~~
+../src/usb_cdc.cpp:68:13: warning: 'void send_task(void*)' defined but not used [-Wunused-function]
+ static void send_task(void *pvParameters) {
+             ^~~~~~~~~
+Finished building: ../src/usb_cdc.cpp
+ 
+Building target: usb_cdc.axf
+Invoking: MCU C++ Linker
+arm-none-eabi-c++ -nostdlib -L"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\lpc_board_nxp_lpcxpresso_1549\Debug" -L"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\lpc_chip_15xx\Debug" -L"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\FreeRTOS\Debug" -Xlinker -Map="usb_cdc.map" -Xlinker --gc-sections -Xlinker -print-memory-usage -mcpu=cortex-m3 -mthumb -T "usb_cdc_Debug.ld" -o "usb_cdc.axf"  ./src/DigitalIoPin.o ./src/Fmutex.o ./src/GcodeParser.o ./src/ITM_write.o ./src/cdc_desc.o ./src/cdc_main.o ./src/cdc_vcom.o ./src/cr_cpp_config.o ./src/cr_startup_lpc15xx.o ./src/crp.o ./src/sysinit.o ./src/usb_cdc.o   -lfreertos -llpc_board_nxp_lpcxpresso_1549 -llpc_chip_15xx -lFreeRTOS
+Memory region         Used Size  Region Size  %age Used
+       MFlash256:       73104 B       256 KB     27.89%
+      Ram0_16_32:        4392 B        32 KB     13.40%
+          Ram2_4:          0 GB         4 KB      0.00%
+Finished building target: usb_cdc.axf
+ 
+make --no-print-directory post-build
+Performing post-build steps
+arm-none-eabi-size "usb_cdc.axf"; # arm-none-eabi-objcopy -v -O binary "usb_cdc.axf" "usb_cdc.bin" ; # checksum -p LPC1549 -d "usb_cdc.bin";
+   text	   data	    bss	    dec	    hex	filename
+  70524	   2580	   1812	  74916	  124a4	usb_cdc.axf
+ 

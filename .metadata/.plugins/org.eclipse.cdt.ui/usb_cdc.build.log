@@ -1,0 +1,113 @@
+11:52:52 **** Build of configuration Debug for project usb_cdc ****
+make -r -j8 all 
+Building file: ../src/DigitalIoPin.cpp
+Building file: ../src/Fmutex.cpp
+Building file: ../src/GcodeParser.cpp
+Building file: ../src/ITM_write.c
+Building file: ../src/cdc_desc.c
+Invoking: MCU C++ Compiler
+Building file: ../src/cdc_main.c
+arm-none-eabi-c++ -std=c++11 -D__NEWLIB__ -DDEBUG -D__CODE_RED -DCORE_M3 -D__USE_LPCOPEN -DCPP_USE_HEAP -D__LPC15XX__ -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\usb_cdc\inc" -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\lpc_board_nxp_lpcxpresso_1549\inc" -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\lpc_chip_15xx\inc" -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\lpc_chip_15xx\inc\usbd" -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\FreeRTOS\inc" -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\FreeRTOS\src\include" -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\FreeRTOS\src\portable\GCC\ARM_CM3" -O0 -fno-common -g3 -Wall -c -fmessage-length=0 -fno-builtin -ffunction-sections -fdata-sections -fno-rtti -fno-exceptions -mcpu=cortex-m3 -mthumb -D__NEWLIB__ -MMD -MP -MF"src/DigitalIoPin.d" -MT"src/DigitalIoPin.o" -MT"src/DigitalIoPin.d" -o "src/DigitalIoPin.o" "../src/DigitalIoPin.cpp"
+make: stat: src/cr_cpp_config.o: Bad file number
+Invoking: MCU C++ Compiler
+Invoking: MCU C++ Compiler
+Invoking: MCU C Compiler
+arm-none-eabi-c++ -std=c++11 -D__NEWLIB__ -DDEBUG -D__CODE_RED -DCORE_M3 -D__USE_LPCOPEN -DCPP_USE_HEAP -D__LPC15XX__ -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\usb_cdc\inc" -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\lpc_board_nxp_lpcxpresso_1549\inc" -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\lpc_chip_15xx\inc" -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\lpc_chip_15xx\inc\usbd" -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\FreeRTOS\inc" -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\FreeRTOS\src\include" -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\FreeRTOS\src\portable\GCC\ARM_CM3" -O0 -fno-common -g3 -Wall -c -fmessage-length=0 -fno-builtin -ffunction-sections -fdata-sections -fno-rtti -fno-exceptions -mcpu=cortex-m3 -mthumb -D__NEWLIB__ -MMD -MP -MF"src/Fmutex.d" -MT"src/Fmutex.o" -MT"src/Fmutex.d" -o "src/Fmutex.o" "../src/Fmutex.cpp"
+Invoking: MCU C Compiler
+arm-none-eabi-c++ -std=c++11 -D__NEWLIB__ -DDEBUG -D__CODE_RED -DCORE_M3 -D__USE_LPCOPEN -DCPP_USE_HEAP -D__LPC15XX__ -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\usb_cdc\inc" -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\lpc_board_nxp_lpcxpresso_1549\inc" -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\lpc_chip_15xx\inc" -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\lpc_chip_15xx\inc\usbd" -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\FreeRTOS\inc" -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\FreeRTOS\src\include" -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\FreeRTOS\src\portable\GCC\ARM_CM3" -O0 -fno-common -g3 -Wall -c -fmessage-length=0 -fno-builtin -ffunction-sections -fdata-sections -fno-rtti -fno-exceptions -mcpu=cortex-m3 -mthumb -D__NEWLIB__ -MMD -MP -MF"src/GcodeParser.d" -MT"src/GcodeParser.o" -MT"src/GcodeParser.d" -o "src/GcodeParser.o" "../src/GcodeParser.cpp"
+Invoking: MCU C Compiler
+Building file: ../src/cdc_vcom.c
+arm-none-eabi-gcc -D__NEWLIB__ -DDEBUG -D__CODE_RED -DCORE_M3 -D__USE_LPCOPEN -DCPP_USE_HEAP -D__LPC15XX__ -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\usb_cdc\inc" -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\lpc_board_nxp_lpcxpresso_1549\inc" -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\lpc_chip_15xx\inc" -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\lpc_chip_15xx\inc\usbd" -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\FreeRTOS\inc" -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\FreeRTOS\src\include" -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\FreeRTOS\src\portable\GCC\ARM_CM3" -O0 -fno-common -g3 -Wall -c -fmessage-length=0 -fno-builtin -ffunction-sections -fdata-sections -mcpu=cortex-m3 -mthumb -D__NEWLIB__ -MMD -MP -MF"src/ITM_write.d" -MT"src/ITM_write.o" -MT"src/ITM_write.d" -o "src/ITM_write.o" "../src/ITM_write.c"
+arm-none-eabi-gcc -D__NEWLIB__ -DDEBUG -D__CODE_RED -DCORE_M3 -D__USE_LPCOPEN -DCPP_USE_HEAP -D__LPC15XX__ -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\usb_cdc\inc" -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\lpc_board_nxp_lpcxpresso_1549\inc" -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\lpc_chip_15xx\inc" -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\lpc_chip_15xx\inc\usbd" -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\FreeRTOS\inc" -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\FreeRTOS\src\include" -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\FreeRTOS\src\portable\GCC\ARM_CM3" -O0 -fno-common -g3 -Wall -c -fmessage-length=0 -fno-builtin -ffunction-sections -fdata-sections -mcpu=cortex-m3 -mthumb -D__NEWLIB__ -MMD -MP -MF"src/cdc_desc.d" -MT"src/cdc_desc.o" -MT"src/cdc_desc.d" -o "src/cdc_desc.o" "../src/cdc_desc.c"
+arm-none-eabi-gcc -D__NEWLIB__ -DDEBUG -D__CODE_RED -DCORE_M3 -D__USE_LPCOPEN -DCPP_USE_HEAP -D__LPC15XX__ -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\usb_cdc\inc" -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\lpc_board_nxp_lpcxpresso_1549\inc" -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\lpc_chip_15xx\inc" -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\lpc_chip_15xx\inc\usbd" -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\FreeRTOS\inc" -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\FreeRTOS\src\include" -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\FreeRTOS\src\portable\GCC\ARM_CM3" -O0 -fno-common -g3 -Wall -c -fmessage-length=0 -fno-builtin -ffunction-sections -fdata-sections -mcpu=cortex-m3 -mthumb -D__NEWLIB__ -MMD -MP -MF"src/cdc_main.d" -MT"src/cdc_main.o" -MT"src/cdc_main.d" -o "src/cdc_main.o" "../src/cdc_main.c"
+Invoking: MCU C Compiler
+arm-none-eabi-gcc -D__NEWLIB__ -DDEBUG -D__CODE_RED -DCORE_M3 -D__USE_LPCOPEN -DCPP_USE_HEAP -D__LPC15XX__ -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\usb_cdc\inc" -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\lpc_board_nxp_lpcxpresso_1549\inc" -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\lpc_chip_15xx\inc" -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\lpc_chip_15xx\inc\usbd" -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\FreeRTOS\inc" -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\FreeRTOS\src\include" -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\FreeRTOS\src\portable\GCC\ARM_CM3" -O0 -fno-common -g3 -Wall -c -fmessage-length=0 -fno-builtin -ffunction-sections -fdata-sections -mcpu=cortex-m3 -mthumb -D__NEWLIB__ -MMD -MP -MF"src/cdc_vcom.d" -MT"src/cdc_vcom.o" -MT"src/cdc_vcom.d" -o "src/cdc_vcom.o" "../src/cdc_vcom.c"
+Building file: ../src/cr_cpp_config.cpp
+Invoking: MCU C++ Compiler
+arm-none-eabi-c++ -std=c++11 -D__NEWLIB__ -DDEBUG -D__CODE_RED -DCORE_M3 -D__USE_LPCOPEN -DCPP_USE_HEAP -D__LPC15XX__ -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\usb_cdc\inc" -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\lpc_board_nxp_lpcxpresso_1549\inc" -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\lpc_chip_15xx\inc" -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\lpc_chip_15xx\inc\usbd" -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\FreeRTOS\inc" -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\FreeRTOS\src\include" -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\FreeRTOS\src\portable\GCC\ARM_CM3" -O0 -fno-common -g3 -Wall -c -fmessage-length=0 -fno-builtin -ffunction-sections -fdata-sections -fno-rtti -fno-exceptions -mcpu=cortex-m3 -mthumb -D__NEWLIB__ -MMD -MP -MF"src/cr_cpp_config.d" -MT"src/cr_cpp_config.o" -MT"src/cr_cpp_config.d" -o "src/cr_cpp_config.o" "../src/cr_cpp_config.cpp"
+Finished building: ../src/cdc_desc.c
+ 
+Building file: ../src/cr_startup_lpc15xx.cpp
+Finished building: ../src/ITM_write.c
+Invoking: MCU C++ Compiler
+arm-none-eabi-c++ -std=c++11 -D__NEWLIB__ -DDEBUG -D__CODE_RED -DCORE_M3 -D__USE_LPCOPEN -DCPP_USE_HEAP -D__LPC15XX__ -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\usb_cdc\inc" -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\lpc_board_nxp_lpcxpresso_1549\inc" -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\lpc_chip_15xx\inc" -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\lpc_chip_15xx\inc\usbd" -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\FreeRTOS\inc" -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\FreeRTOS\src\include" -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\FreeRTOS\src\portable\GCC\ARM_CM3" -O0 -fno-common -g3 -Wall -c -fmessage-length=0 -fno-builtin -ffunction-sections -fdata-sections -fno-rtti -fno-exceptions -mcpu=cortex-m3 -mthumb -D__NEWLIB__ -MMD -MP -MF"src/cr_startup_lpc15xx.d" -MT"src/cr_startup_lpc15xx.o" -MT"src/cr_startup_lpc15xx.d" -o "src/cr_startup_lpc15xx.o" "../src/cr_startup_lpc15xx.cpp"
+ 
+Finished building: ../src/DigitalIoPin.cpp
+Finished building: ../src/cr_cpp_config.cpp
+Building file: ../src/crp.c
+ 
+ 
+Finished building: ../src/Fmutex.cpp
+Building file: ../src/sysinit.c
+Invoking: MCU C Compiler
+arm-none-eabi-gcc -D__NEWLIB__ -DDEBUG -D__CODE_RED -DCORE_M3 -D__USE_LPCOPEN -DCPP_USE_HEAP -D__LPC15XX__ -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\usb_cdc\inc" -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\lpc_board_nxp_lpcxpresso_1549\inc" -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\lpc_chip_15xx\inc" -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\lpc_chip_15xx\inc\usbd" -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\FreeRTOS\inc" -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\FreeRTOS\src\include" -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\FreeRTOS\src\portable\GCC\ARM_CM3" -O0 -fno-common -g3 -Wall -c -fmessage-length=0 -fno-builtin -ffunction-sections -fdata-sections -mcpu=cortex-m3 -mthumb -D__NEWLIB__ -MMD -MP -MF"src/crp.d" -MT"src/crp.o" -MT"src/crp.d" -o "src/crp.o" "../src/crp.c"
+Building file: ../src/usb_cdc.cpp
+In file included from C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\usb_cdc\inc/GcodeParser.h:4:0,
+ 
+                 from ../src/GcodeParser.cpp:1:
+C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\usb_cdc\inc/CommandStruct.h:4:1: warning: 'typedef' was ignored in this declaration
+ typedef struct CommandStruct {
+ ^~~~~~~
+../src/GcodeParser.cpp: In member function 'void GcodeParser::tokenizeInput(const string&)':
+../src/GcodeParser.cpp:58:14: warning: comparison between signed and unsigned integer expressions [-Wsign-compare]
+Invoking: MCU C Compiler
+   while (pos != string::npos) {
+          ~~~~^~~~~~~~~
+../src/GcodeParser.cpp:64:17: warning: comparison between signed and unsigned integer expressions [-Wsign-compare]
+    else if (pos != string::npos) {
+             ~~~~^~~~~~~~~
+../src/GcodeParser.cpp: In member function 'bool GcodeParser::parseG1ParameterELITELEVEL(const string&, const char&, int&)':
+../src/GcodeParser.cpp:249:10: warning: comparison between signed and unsigned integer expressions [-Wsign-compare]
+  if (res == (len-3) ) {
+      ~~~~^~~~~~~~~~
+arm-none-eabi-gcc -D__NEWLIB__ -DDEBUG -D__CODE_RED -DCORE_M3 -D__USE_LPCOPEN -DCPP_USE_HEAP -D__LPC15XX__ -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\usb_cdc\inc" -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\lpc_board_nxp_lpcxpresso_1549\inc" -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\lpc_chip_15xx\inc" -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\lpc_chip_15xx\inc\usbd" -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\FreeRTOS\inc" -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\FreeRTOS\src\include" -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\FreeRTOS\src\portable\GCC\ARM_CM3" -O0 -fno-common -g3 -Wall -c -fmessage-length=0 -fno-builtin -ffunction-sections -fdata-sections -mcpu=cortex-m3 -mthumb -D__NEWLIB__ -MMD -MP -MF"src/sysinit.d" -MT"src/sysinit.o" -MT"src/sysinit.d" -o "src/sysinit.o" "../src/sysinit.c"
+Invoking: MCU C++ Compiler
+arm-none-eabi-c++ -std=c++11 -D__NEWLIB__ -DDEBUG -D__CODE_RED -DCORE_M3 -D__USE_LPCOPEN -DCPP_USE_HEAP -D__LPC15XX__ -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\usb_cdc\inc" -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\lpc_board_nxp_lpcxpresso_1549\inc" -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\lpc_chip_15xx\inc" -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\lpc_chip_15xx\inc\usbd" -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\FreeRTOS\inc" -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\FreeRTOS\src\include" -I"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\FreeRTOS\src\portable\GCC\ARM_CM3" -O0 -fno-common -g3 -Wall -c -fmessage-length=0 -fno-builtin -ffunction-sections -fdata-sections -fno-rtti -fno-exceptions -mcpu=cortex-m3 -mthumb -D__NEWLIB__ -MMD -MP -MF"src/usb_cdc.d" -MT"src/usb_cdc.o" -MT"src/usb_cdc.d" -o "src/usb_cdc.o" "../src/usb_cdc.cpp"
+Finished building: ../src/cdc_main.c
+Finished building: ../src/cdc_vcom.c
+ 
+ 
+Finished building: ../src/cr_startup_lpc15xx.cpp
+ 
+Finished building: ../src/crp.c
+ 
+Finished building: ../src/sysinit.c
+ 
+Finished building: ../src/GcodeParser.cpp
+ 
+In file included from C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\usb_cdc\inc/GcodeParser.h:4:0,
+                 from ../src/usb_cdc.cpp:37:
+C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\usb_cdc\inc/CommandStruct.h:4:1: warning: 'typedef' was ignored in this declaration
+ typedef struct CommandStruct {
+ ^~~~~~~
+../src/usb_cdc.cpp: In function 'void receive_task(void*)':
+../src/usb_cdc.cpp:101:6: warning: unused variable 'initlen' [-Wunused-variable]
+  int initlen= strlen(initialMessage);
+      ^~~~~~~
+../src/usb_cdc.cpp: At global scope:
+../src/usb_cdc.cpp:95:13: warning: 'void receive_task(void*)' defined but not used [-Wunused-function]
+ static void receive_task(void *pvParameters) {
+             ^~~~~~~~~~~~
+../src/usb_cdc.cpp:68:13: warning: 'void send_task(void*)' defined but not used [-Wunused-function]
+ static void send_task(void *pvParameters) {
+             ^~~~~~~~~
+Finished building: ../src/usb_cdc.cpp
+ 
+Building target: usb_cdc.axf
+Invoking: MCU C++ Linker
+arm-none-eabi-c++ -nostdlib -L"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\lpc_board_nxp_lpcxpresso_1549\Debug" -L"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\lpc_chip_15xx\Debug" -L"C:\Users\Joel\Documents\MCUXpressoIDE_10.1.1_606\workspace2\FreeRTOS\Debug" -Xlinker -Map="usb_cdc.map" -Xlinker --gc-sections -Xlinker -print-memory-usage -mcpu=cortex-m3 -mthumb -T "usb_cdc_Debug.ld" -o "usb_cdc.axf"  ./src/DigitalIoPin.o ./src/Fmutex.o ./src/GcodeParser.o ./src/ITM_write.o ./src/cdc_desc.o ./src/cdc_main.o ./src/cdc_vcom.o ./src/cr_cpp_config.o ./src/cr_startup_lpc15xx.o ./src/crp.o ./src/sysinit.o ./src/usb_cdc.o   -lfreertos -llpc_board_nxp_lpcxpresso_1549 -llpc_chip_15xx -lFreeRTOS
+Memory region         Used Size  Region Size  %age Used
+       MFlash256:       73104 B       256 KB     27.89%
+      Ram0_16_32:        4392 B        32 KB     13.40%
+          Ram2_4:          0 GB         4 KB      0.00%
+Finished building target: usb_cdc.axf
+ 
+make --no-print-directory post-build
+Performing post-build steps
+arm-none-eabi-size "usb_cdc.axf"; # arm-none-eabi-objcopy -v -O binary "usb_cdc.axf" "usb_cdc.bin" ; # checksum -p LPC1549 -d "usb_cdc.bin";
+   text	   data	    bss	    dec	    hex	filename
+  70524	   2580	   1812	  74916	  124a4	usb_cdc.axf
+ 
+
+11:52:55 Build Finished (took 3s.209ms)
+
