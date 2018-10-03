@@ -30,7 +30,7 @@ public:
 	bool assertNotLeadingZero(const char &letter);
 	bool parseM4(CommandStruct &cmdRef);
 	bool parseM1(CommandStruct &cmdRef);
-
+    bool tokenize_input_refactored(const std::string & rawInput);
 	int getCoordsFromG1Parameter( const bool &isPositive, const std::string &coordsRef, const char &axisChar);
 	
 	

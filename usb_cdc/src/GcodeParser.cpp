@@ -79,6 +79,64 @@ void GcodeParser::tokenizeInput(const std::string &rawInput) {
 	}
 }
 
+
+bool GcodeParser::tokenize_input_refactored(const std::string & rawInput) {
+
+	/*find delimiter == singleSpacebar*/
+	auto res = rawInput.find(delimiter);
+
+	/*find if there was twoOrMoreDelimiters backToBack "  " twospacebars */
+	string backToBackDelim;
+	backToBackDelim += delimiter;
+	backToBackDelim += delimiter;
+	auto res2 = rawInput.find(backToBackDelim);
+
+	int searchInd = 0;
+	int pos = 0;
+	int size = rawInput.length();
+
+	/*if the input was too large => reject as illegal*/
+	if (size > maxCharAmount) {
+		tokensVec.push_back("INVALID_COMMAND!");
+		return false;
+	}
+	/*check if empty string*/
+	if (size == 0) {
+		tokensVec.push_back("INVALID_COMMAND!");
+		return false;
+	}
+
+	/*found 2delim backtoback*/
+	if (res2 != string::npos) {
+		tokensVec.push_back("INVALID_COMMAND!");
+		return false;
+	}
+
+	/*input ended in delimiter or started with delimiter*/
+	if (rawInput[0] == delimiter || rawInput[size-1] == delimiter) {
+		tokensVec.push_back("INVALID_COMMAND!");
+		return false;
+	}
+
+	/*delimiter wasnt found => take complete word into vec for later parsing*/
+	if (res == string::npos) {
+		tokensVec.push_back(rawInput);
+		return true;
+	}
+	else {
+		while (pos != string::npos) {
+			pos = rawInput.find(delimiter, searchInd);
+			if (pos != string::npos) {
+				tokensVec.push_back(rawInput.substr(searchInd, pos - searchInd));
+				searchInd = pos + 1;
+			}
+		}
+		/*take the last valid token*/
+		tokensVec.push_back( rawInput.substr(searchInd, size - searchInd) );
+		return true;
+	}
+}
+
 bool GcodeParser::parseM10(CommandStruct & cmdRef) {
 	//check how many words(or tokens) we got inside
 	auto len = tokensVec.size();
