@@ -32,30 +32,69 @@
 #include "queue.h"
 #include <string>
 #include <vector>
+//regular and freertos includes ends
 
-// TODO: insert other definitions and declarations here
+// User-defined classes, structs and includes
 #include "GcodeParser.h"
 #include "CommandStruct.h"
+//user defined includes ends
 
-//global semaphores and variables
+
+
+
+
+
+
+
+
+/*CONDITINAL COMPILATION OPTIONS****************************/
+
+//#define useLoopingBresenham
+
+/*options and variables when using RITinterruptBresingham*/
+#ifndef useLoopingBresenham //variables for RITinterruptBresingham
+
+volatile int g_dx, g_dy, g_nabla;
+int g_x_1, g_x_0, g_y_1, g_y_0;
+char g_drivingAxis = 'X';
+
+#endif
+/*********************************************************/
+
+
+
+
+
+
+
+
+//global semaphores defined
 SemaphoreHandle_t syncSemph;
+QueueHandle_t commandQueue;
+SemaphoreHandle_t sbRIT; //NOTE!! THIS SEMAPHORE IS NECESSARY! DOUBLECHECK MAIN() TO SEE IF CREATED CORRECTLY...
+SemaphoreHandle_t sbGo;
+//global semaphores ends
 
+
+/*global variables defined*/
+/*bresinghams algortihm variables, notation is based on bresinghams original paper for control of digital plotters*/
+
+//NOTE! loopingBresenham version of Interrupt Handler function uses THIS EXTRA VARIABLE, USE CONDITIONAL COMPILATION...
 volatile std::atomic<int> executeM1orM2(0); //check 1 or 2 inside isr to decide
 
-/*bresinghams algortihm variables, notation is based on bresinghams original paper for control of digital plotters*/
+
+
+
+//These global variables are shared usage between either case of Interrupt Handlers...
+
 volatile int m1parameter = 0;// for each step m1parameter can be one of four values, determine which pin is driven into which direction
 volatile int m2parameter = 0;//  for each step m2parameter can be one of four values, determine which two pins are driven into which direction at the same time
 int octant = 0; //from [1-8] //octant is gotten with a helper function, which processes coords, and based on octant, you decide m1parameter and m2parameters
-
-
-int ppsValue=1000;	//arbitrary value for pps
-
+const int ppsValue=800;	//arbitrary value for pps
 volatile uint32_t RIT_count; //NOTE!! THIS VARIABLE IS NECESSARY!
-SemaphoreHandle_t sbRIT; //NOTE!! THIS SEMAPHORE IS NECESSARY! DOUBLECHECK MAIN() TO SEE IF CREATED CORRECTLY...
-SemaphoreHandle_t sbGo;
 static  std::atomic<bool> calibrationFinished(false);
 static volatile std::atomic<bool> pulseState(true);//NOTE!! THIS VARIABLE IS NECESSARY!
-QueueHandle_t commandQueue;
+/*global variables ends*/
 
 
 
@@ -64,15 +103,13 @@ DigitalIoPin *limit1P;
 DigitalIoPin *limit2P;
 DigitalIoPin *limit3P;
 DigitalIoPin *limit4P;
-
 DigitalIoPin *stepXP;
 DigitalIoPin *dirXP;
-
 DigitalIoPin *stepYP;
 DigitalIoPin *dirYP;
 DigitalIoPin *laserP;
 DigitalIoPin *penP;
-
+//GlobalPointers End here
 
 
 
@@ -87,8 +124,116 @@ void vConfigureTimerForRunTimeStats( void ) {
 
 }
 
+/**********  RIT interrupt handler for interrupt-driven Bresenham algorithm  *** USE CONDITIONAL COMPILATION TO ENABLE ***********/
+#ifndef useLoopingBresenham
+extern "C"{
+void RIT_IRQHandler(void){ //THIS VERSION IS FOR RITinterruptBresenham
+	// This used to check if a context switch is required
+	portBASE_TYPE xHigherPriorityWoken = pdFALSE;
+	// Tell timer that we have processed the interrupt.
+	// Timer then removes the IRQ until next match occurs
+	Chip_RIT_ClearIntStatus(LPC_RITIMER);// clear IRQ flag
 
-//EXAMPLE RIT_interrupt_handler is used to control the pulses of the motor!!!
+	static bool expectm2 = false; //boolean keeps track of halfpulsing for m2pinwrite in the same ISR round as the m1pinwrite
+
+	if (limit1P != NULL && limit2P != NULL && limit3P != NULL && limit4P != NULL) { //should never be nullpointers when starting ritstart
+
+		bool isOK = ( !limit1P->read() && !limit2P->read() && !limit3P->read() && !limit4P->read() ); //check limits status inside ISR
+
+		if (RIT_count > 0) { //regular case, "iterate bresenham algorithm" inside interrupt handler
+
+			if (isOK) { //CALIBRATION MODE SHOULD NEVER USE RIT IRQ
+				/*at each fullstep, in the beginning,
+				 * use decisionparameter to iterate over bresenham
+				 * When RIT_count is odd, => implies that current ISR round is basically
+				 * writing false cycle to the steppins, to complete any given fullstep*/
+				if(RIT_count % 2 == 0){
+
+					if(g_nabla >= 0){
+						expectm2=true;
+						g_nabla = g_nabla + 2* g_dy - 2* g_dx;
+					}else{
+						expectm2=false;
+						g_nabla = g_nabla + 2* g_dy;
+					}
+				}
+
+				/*prepare to halfpulse the m1pin in all cases
+				 * m1pin is notation based on Bresenhams original paper
+				 * the dirPins are already pre-computed before ISR
+				 * for each line plot, for each G1command, dirPins stay same
+				 * */
+				switch(m1parameter){
+				case 1: stepXP->write(pulseState); break;
+				case 3: stepYP->write(pulseState);break;
+				case 5: stepXP->write(pulseState);break;
+				case 7: stepYP->write(pulseState);break;
+				default:break;//should never happen
+				}
+
+				/*check if perform  halfpulse m2pin for diagonal M2Move
+				 * only perform the necessary checks inside ISR,
+				 * rely on the setupBresenham to have correctly
+				 * configured dirPins before line plot
+				 * */
+
+				/*NOTE!!!
+				 *   expectm2 is static bool initialized at false, so that it keeps
+				 *   track of its own state after each ISR iterating round
+				 *   then, at the end of final halfpulse ISR iterating round, remember to reset expectm2 to false
+				 *   */
+				if(expectm2){ //IF expect m2pinwrite, halfpulse to the m2pin, else it was only m1motormove
+					if(m1parameter==1)
+						stepYP->write(pulseState);
+					else if(m1parameter==3)
+						stepXP->write(pulseState);
+					else if(m1parameter==5)
+						stepYP->write(pulseState);
+					else if(m1parameter==7)
+						stepXP->write(pulseState);
+					else{
+						//should never go to else
+						}
+				}else{
+					//dont halfpulse m2pin, => implies m1motormove
+				}
+
+				pulseState= !pulseState;
+				RIT_count--;
+				/*ISR will still be called, when RIT_count == 0,
+				 * but then the interrupt doesnt write to any pins
+				 * when RIT_count==0, interrupt simply ends and
+				 * resets RIT_count and expectm2  */
+
+			} else { //WE HIT THE WALL, set rit_count=0, stop stepPins, and soon the motor will stop, hopefully
+				stepXP->write(false);
+				stepYP->write(false);
+				RIT_count = 0;
+			}
+		} else { // "iterate bresenham" has ended, prepare to reset variables and stop interrupt
+
+			expectm2=false; //reset boolean in preparation for the beginning of next G1 command, so it will be false in beginning of ritstart
+			RIT_count=0; //reset RIT_count also, probably not needed though, because ritstart sets it up again
+			Chip_RIT_Disable(LPC_RITIMER); // disable timer
+			// Give semaphore and set context switch flag if a higher priority task was woken up
+			xSemaphoreGiveFromISR(sbRIT, &xHigherPriorityWoken);
+		}
+		// End the ISR and (possibly) do a context switch
+		portEND_SWITCHING_ISR(xHigherPriorityWoken);
+	}else{
+		//do nothing the limitpointers are null// SHOULD NOT HAPPEN!!!
+	}
+
+
+}
+}
+
+#endif
+/*********************************************************************************************************************************/
+
+
+/*** RIT interrupt handler for looping style Bresenham algorithm, USE CONDITIONAL COMPILATION TO ENABLE ***/
+#ifdef useLoopingBresenham
 extern "C" {
 void RIT_IRQHandler(void) {
 	// This used to check if a context switch is required
@@ -135,6 +280,10 @@ void RIT_IRQHandler(void) {
 	}
 }
 }
+#endif
+/**********************************************************************************************************/
+
+
 
 
 
@@ -176,6 +325,37 @@ static void prvSetupHardware(void)
  * */
 
 
+
+void RIT_start(int count, int us) {
+	uint64_t cmp_value;
+	// Determine approximate compare value based on clock rate and passed interval
+	cmp_value = (uint64_t) Chip_Clock_GetSystemClockRate() * (uint64_t) us
+			/ 1000000;
+	// disable timer during configuration
+	Chip_RIT_Disable(LPC_RITIMER);
+	RIT_count = count;
+	// enable automatic clear on when compare value==timer value
+	// this makes interrupts trigger periodically
+	Chip_RIT_EnableCompClear(LPC_RITIMER);
+	// reset the counter
+	Chip_RIT_SetCounter(LPC_RITIMER, 0);
+	Chip_RIT_SetCompareValue(LPC_RITIMER, cmp_value);
+	// start counting
+	Chip_RIT_Enable(LPC_RITIMER);
+	// Enable the interrupt signal in NVIC (the interrupt controller)
+	NVIC_EnableIRQ(RITIMER_IRQn);
+	// wait for ISR to tell that we're done
+	if (xSemaphoreTake(sbRIT, portMAX_DELAY) == pdTRUE) {
+		// Disable the interrupt signal in NVIC (the interrupt controller)
+		NVIC_DisableIRQ(RITIMER_IRQn);
+	} else {
+		// unexpected error
+	}
+}
+
+
+
+
 int getOctant(bool A, bool B, bool C) {
 	/*function is based on Bresingham's original paper, in the tabulated information section about the algorithm
 	 *
@@ -213,6 +393,231 @@ int getOctant(bool A, bool B, bool C) {
 
 
 }
+
+/** Conditional compilation for RIT INTERRUPT BRESENHAM FUNCTIONS **/
+#ifndef useLoopingBresenham
+
+/*helper functions for RIT_INTERRUPT BRESENHAM */
+int refactored_getOctant(int orig_dx, int orig_dy){
+	/*check booleans to determine octant number
+	later inside adjustm1motor and adjustm2motor
+	we determine those movemeentpatterns with the octant number
+	A = deltaX < 0
+	B = deltaY < 0
+	C = 0 < abs(x1 - x0) - abs(y1 - y0)
+
+	This helper function was codedd basd on bresenhams tabulated information table at the end
+	NOTE!!
+	based on my test it should be executed before any swaps are made. You can verify
+	this function with pen and paper and draw triangles into unit circle and look at the angle
+	*/
+	bool A, B, C;
+	A = (orig_dx >= 0);
+	B = (orig_dy >= 0);
+	C = ( abs(orig_dx) - abs(orig_dy) >= 0  );
+
+	if (A && B && C) {
+		return 1; //oct1
+	} else if (A && B && !C) {
+		return 2; //oct2
+	} else if (A && !B && C) {
+		return 8; //oct8
+	} else if (A && !B && !C) {
+		return 7; //oct7
+	} else if (!A && B && C) {
+		return 4; //oct4
+	} else if (!A && B && !C) {
+		return 3; //oct3
+	} else if (!A && !B && C) {
+		return 5; //oct 5
+	} else {
+		return 6; //oct 6
+	}
+
+
+}
+
+/*helper functions for RIT_INTERRUPT BRESENHAM */
+void refactored_decideM1Parameter(int octant){
+	/*from bresenhams original researchpaper, near the
+	tabulated data section
+
+	this function requires the correctly working and correct
+	octant value for the G1move to deduce the m1pattern*/
+	int pattern1(0);
+	switch (octant) {
+		case 1: pattern1 = 1; break;
+		case 2: pattern1 = 3; break;
+		case 3: pattern1 = 3; break;
+		case 4: pattern1 = 5; break;
+		case 5: pattern1 = 5; break;
+		case 6: pattern1 = 7; break;
+		case 7: pattern1 = 7; break;
+		case 8: pattern1 = 1; break;
+		default:break;//shoudlnt be here
+	}
+
+	//decide and set global variable m1pattern
+	m1parameter = pattern1;
+
+}
+
+/*helper functions for RIT_INTERRUPT BRESENHAM */
+void refactored_decideM2Parameter(int octant){
+	/*from bresenhams original researchpaper, near the
+	tabulated data section
+
+	this function requires the correctly working and correct
+	octant value for the G1move to deduce the m2pattern*/
+	int pattern2(0);
+	switch (octant) {
+		case 1: pattern2 = 2; break;
+		case 2: pattern2 = 2; break;
+		case 3: pattern2 = 4; break;
+		case 4: pattern2 = 4; break;
+		case 5: pattern2 = 6; break;
+		case 6: pattern2 = 6; break;
+		case 7: pattern2 = 8; break;
+		case 8: pattern2 = 8; break;
+		default:break;//shoudlnt be here
+	}
+
+	//decide and set global variable m2parameter
+	m2parameter = pattern2;
+
+}
+
+/*helper functions for RIT_INTERRUPT BRESENHAM */
+char refactored_decideSwapAxes(int octant){
+	/*function is used BEFORE executing bresenhams looping
+	OR bresenhams ISR handler function
+
+	with the already computed data from getOctant
+	we decide if swaps of global variables are necessary
+
+	it is needed to implement bresenhams for all angles
+
+	NOTICE SWAPS GLOBAL VARIABLES!!!
+	dy, dx, x, y, nabla
+	returns the drivingAxis char or some information for debugging
+	maybe full version doesnt need to return
+	if swapped, returns y axis
+	else returns regular x axis*/
+
+	/*if true, then perform swap of driving axis, else keep variables
+	 * and driving axis will be x-axis*/
+	if( octant == 2 ||
+		octant == 7 ||
+		octant == 3 ||
+		octant == 6 ) {
+		/*recompute global variables in preparation
+		for first check of the bresenham*/
+
+		std::swap(g_x_1, g_y_1);
+		std::swap(g_x_0, g_y_0);
+		g_dx = abs(g_x_1 - g_x_0 );
+		g_dy = abs( g_y_1 - g_y_0 );
+		g_nabla = 2 * g_dy - g_dx;	//initial value of nabla for first check inside ISR
+		return 'Y';
+	}
+
+	else{
+		/*apparently ISRversion of Bresenham uses absolute value
+		 * according to the original paper */
+		g_dx = abs(g_dx);
+		g_dy = abs(g_dy);
+		g_nabla = 2 * g_dy - g_dx;
+		return 'X';
+	}
+}
+
+/*helper functions for RIT_INTERRUPT BRESENHAM */
+void refactored_setupBresenhamDirPins(int m1param, int m2param){
+	//dir == true, implies decreasing coordinates
+	//dir == false, implies increasing coordinates
+	switch(m1param){
+	case 1: dirXP->write(true); break; //hopefuly go right
+	case 3: dirYP->write(true); break; //hopefuly go up
+	case 5: dirXP->write(false); break; //hopefuly go left
+	case 7: dirYP->write(false); break; //hopefuly go down
+	default: break;
+	}
+
+
+	if (m1param==1) {
+		if (m2param == 2)
+			dirYP->write(true);
+		else if(m2param==8)
+			dirYP->write(false);
+	}
+
+	else if (m1param==3) {
+		if (m2param == 2)
+			dirXP->write(true);
+		else if (m2param == 4)
+			dirXP->write(false);
+	}
+
+	else if (m1param==5) {
+		if (m2param == 4)
+			dirYP->write(true);
+		else if (m2param == 6)
+			dirYP->write(false);
+	}
+
+	else if (m1param == 7) {
+		if (m2param == 6)
+			dirXP->write(false);
+		else if (m2param == 8)
+			dirXP->write(true);
+	}
+	else{
+		//should never get here
+	}
+
+
+}
+
+
+/*main function for  RIT_INTERRUPT BRESENHAM, starts interrupt bresenham*/
+void refactored_BresenhamInterruptAlgorithm(int x0, int y0, int x1, int y1){
+
+	/*ASSUME
+	 * initially that each xcoord, ycoord == 1.0mm
+	 * */
+
+	const int raw_dx = x1 - x0;
+	const int raw_dy = y1 - y0;
+	g_x_0 = x0;
+	g_x_1 = x1;
+	g_y_0 = y0;
+	g_y_1 = y1;
+	g_dx = g_x_1 - g_x_0;
+	g_dy = g_y_1 - g_y_0;
+	g_nabla = 0;
+	//global nabla is hopefully properly initialized in the refactored_decideSwapAxes
+	const int oct = refactored_getOctant(raw_dx, raw_dy);
+	refactored_decideM1Parameter(oct);
+	refactored_decideM2Parameter(oct);
+
+	const char drivingAxis = refactored_decideSwapAxes(oct); //knowing the drivingAxis isnt important except for debugging
+
+
+	const int fullsteps =  g_dx;
+
+
+	//NOTE! always ritstart with even numbers because by definition, you are halfpulsing the fullpulses
+	RIT_start( 2 * fullsteps,  ( 1000000 / (2*ppsValue) )    );
+
+
+}
+
+
+#endif
+
+
+/** Conditional compilation for LoopingBresenhamFunctions **/
+#ifdef useLoopingBresenham
 
 //returns currently active motorpattern (horizontal or vert motormove) and sets pins
 int adjustm1motor(int curOctant) {
@@ -303,34 +708,9 @@ int adjustm2motor(int curOctant) {
 	return m2parameter;
 }
 
+#endif
 
 
-void RIT_start(int count, int us) {
-	uint64_t cmp_value;
-	// Determine approximate compare value based on clock rate and passed interval
-	cmp_value = (uint64_t) Chip_Clock_GetSystemClockRate() * (uint64_t) us
-			/ 1000000;
-	// disable timer during configuration
-	Chip_RIT_Disable(LPC_RITIMER);
-	RIT_count = count;
-	// enable automatic clear on when compare value==timer value
-	// this makes interrupts trigger periodically
-	Chip_RIT_EnableCompClear(LPC_RITIMER);
-	// reset the counter
-	Chip_RIT_SetCounter(LPC_RITIMER, 0);
-	Chip_RIT_SetCompareValue(LPC_RITIMER, cmp_value);
-	// start counting
-	Chip_RIT_Enable(LPC_RITIMER);
-	// Enable the interrupt signal in NVIC (the interrupt controller)
-	NVIC_EnableIRQ(RITIMER_IRQn);
-	// wait for ISR to tell that we're done
-	if (xSemaphoreTake(sbRIT, portMAX_DELAY) == pdTRUE) {
-		// Disable the interrupt signal in NVIC (the interrupt controller)
-		NVIC_DisableIRQ(RITIMER_IRQn);
-	} else {
-		// unexpected error
-	}
-}
 
 
 //EXAMPLE FUNCTION SCTSETUP THREE COUNTERS FOR THREE RGB COLORS
@@ -496,6 +876,7 @@ void stepVert(){
 	stepYP->write(false);
 	vTaskDelay(1);
 }
+
 void stepHoriz(){
 	//dirXP->write(true);
 	stepXP->write(true);
@@ -505,12 +886,14 @@ void stepHoriz(){
 }
 
 void moveRight(){
+
 	dirXP->write(true);
 	stepXP->write(true);
 	vTaskDelay(2);
 	stepXP->write(false);
 	vTaskDelay(2);
 }
+
 void moveLeft(){
 	dirXP->write(false);
 	stepXP->write(true);
@@ -518,6 +901,7 @@ void moveLeft(){
 	stepXP->write(false);
 	vTaskDelay(2);
 }
+
 void moveUp(){
 	dirYP->write(true);
 	stepYP->write(true);
@@ -525,6 +909,7 @@ void moveUp(){
 	stepYP->write(false);
 	vTaskDelay(2);
 }
+
 void moveDown(){
 	dirYP->write(false);
 	stepYP->write(true);
@@ -533,7 +918,10 @@ void moveDown(){
 	vTaskDelay(2);
 }
 
-//special case for purely horizontal moves BRESENHAM
+/** Conditional compilation for LoopingBresenhamFunctions **/
+#ifdef useLoopingBresenham
+
+//special case for purely horizontal moves BRESENHAM loopingBresenham
 void plotLineHoriz(int x0, int y0, int x1, int y1) {
 	int dx = x1 - x0;
 	int dy = y1 - y0;
@@ -558,7 +946,7 @@ void plotLineHoriz(int x0, int y0, int x1, int y1) {
 	}
 }
 
-//special case for purely vertical moves BRESENHAM
+//special case for purely vertical moves BRESENHAM loopingBresenham
 void plotLineVert(int x0, int y0, int x1, int y1) {
 	int dx = x1 - x0;
 	int dy = y1 - y0;
@@ -580,7 +968,7 @@ void plotLineVert(int x0, int y0, int x1, int y1) {
 	}
 }
 
-//BRESENHAM HELPER FUNCTION
+//BRESENHAM HELPER FUNCTION loopingBresenham
 void plotLineLow(int x0, int y0, int x1, int y1) {
 
 	/*setting up required global variables for algorithm:
@@ -632,7 +1020,8 @@ void plotLineLow(int x0, int y0, int x1, int y1) {
 	}
 }
 
-//BRESENHAM HELPER FUNCTION
+
+//BRESENHAM HELPER FUNCTION loopingBresenham
 void plotLineHigh(int x0, int y0, int x1, int y1) {
 
 	/*setting up required global variables for algorithm:
@@ -684,7 +1073,7 @@ void plotLineHigh(int x0, int y0, int x1, int y1) {
 	}
 }
 
-//BRESENHAM MAIN FUNCTION
+//BRESENHAM MAIN FUNCTION loopingBresenham
 void plotLineGeneral(int x0, int y0, int x1, int y1) {
 	/*octant notation goes from
 	 angle 0deg to 45deg == oct 1
@@ -704,12 +1093,13 @@ void plotLineGeneral(int x0, int y0, int x1, int y1) {
 		bool res = abs(y1 - y0) < abs(x1 - x0);
 		//octant getting is based on bresenhams original paper and usage of helper function to get the correct octant
 		octant = 1;
-		octant = getOctant((x1 - x0 < 0), (y1 - y0 < 0), (res));
+		octant = getOctant((x1 - x0 < 0), (y1 - y0 < 0), (abs(x1 - x0) - abs(y1 - y0) < 0) );
 		//m1parameter and m2parameters are based on bresenhams original paper with  single motormove and diagonal (dual motor)move
 		m2parameter = adjustm2motor(octant);
 		m1parameter = adjustm1motor(octant);
 
 		if (res) {
+			int kakka=0;//for debug only
 			if (x0 > x1) {
 				//octant 4, octant 5???
 				plotLineLow(x1, y1, x0, y0);
@@ -719,6 +1109,7 @@ void plotLineGeneral(int x0, int y0, int x1, int y1) {
 				plotLineLow(x0, y0, x1, y1);
 			}
 		} else {
+			int kakka=0;//for debug only
 			if (y0 > y1) {
 				// octant 6, octant 7 ???
 				plotLineHigh(x1, y1, x0, y0);
@@ -728,8 +1119,14 @@ void plotLineGeneral(int x0, int y0, int x1, int y1) {
 				plotLineHigh(x0, y0, x1, y1);
 			}
 		}
+
 	}
 }
+
+#endif
+
+
+
 
 
 //executes G1 and pen and laser commands
@@ -903,12 +1300,30 @@ static void calibrate_task(void*pvParameters){
 
 }
 
+#ifndef useLoopingBresenham
+
+static void testdraw_isr_bresenham_task(void*pvParameters){
+	vTaskDelay(500);
+	refactored_BresenhamInterruptAlgorithm(250, 250, 276, 300);
+	for(;;){
+		vTaskDelay(10000);
+	}
+
+
+}
+
+#endif
+
+
+
+/** Conditional compilation LoopingBresenham testing task for the plottersimulator **/
+#ifdef useLoopingBresenham
 
 static void draw_square_task(void*pvParameters){
 
 
-vTaskDelay(100);
-	//diamond buggy!!!
+vTaskDelay(200);
+	//diamond buggy!!!??? sometiems prints sometimes doesnt depedn on beginning delay before drawing???
 	plotLineGeneral(250,250, 300, 270);
 	plotLineGeneral(300, 270, 350,250);
 	plotLineGeneral(350,250,300,230 );
@@ -916,17 +1331,34 @@ vTaskDelay(100);
 
 	//another diamond
 	/*this diamond works ok*/
-	plotLineGeneral(250,250,240,270 );
-	plotLineGeneral(240,270,230,250 );
-	plotLineGeneral(230,250 ,240,230);
-	plotLineGeneral(240,230,250,250);
+	plotLineGeneral(250,250,	240,270 );
+	plotLineGeneral(240,270,	230,250 );
+	plotLineGeneral(230,250,	240,230);
+	plotLineGeneral(240,230,	250,250);
 
+	//reset the diamond and prepare to draw square
+	plotLineGeneral(250,250,	240,270 );
+	plotLineGeneral(240,270,	230,250 );
+
+	//draw rectangle
+	plotLineGeneral( 230,250,	230, 270 );
+	plotLineGeneral( 230,270,	350, 270 );
+	plotLineGeneral( 350,270,	350, 230 );
+	plotLineGeneral( 350,230,	230, 230 );
+	plotLineGeneral( 230,230,	230, 270 );
+
+//plotLineGeneral(250, 250, 350, 250);
+//
+//plotLineGeneral(350, 250, 350, 350);
 
 
 	for(;;){
 		vTaskDelay(100);
 	}
 }
+
+#endif
+
 
 
 
@@ -973,9 +1405,20 @@ int main(void) {
 			configMINIMAL_STACK_SIZE * 5, NULL, (tskIDLE_PRIORITY + 1UL),
 			(TaskHandle_t *) NULL);
 
+	#ifdef useLoopingBresenham
 	xTaskCreate(draw_square_task, "drawsquare",
 			configMINIMAL_STACK_SIZE * 4, NULL, (tskIDLE_PRIORITY + 1UL),
 			(TaskHandle_t *) NULL);
+	#endif
+
+
+#ifndef useLoopingBresenham
+	xTaskCreate(testdraw_isr_bresenham_task, "isrtestdraw",
+			configMINIMAL_STACK_SIZE * 4, NULL, (tskIDLE_PRIORITY + 1UL),
+			(TaskHandle_t *) NULL);
+
+#endif
+
 
 	xTaskCreate(execute_task, "execute_task",
 			configMINIMAL_STACK_SIZE * 4, NULL, (tskIDLE_PRIORITY + 1UL),
