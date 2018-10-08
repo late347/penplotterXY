@@ -32,6 +32,7 @@
 #include "queue.h"
 #include <string>
 #include <vector>
+#include <cmath>
 //regular and freertos includes ends
 
 // User-defined classes, structs and includes
@@ -49,7 +50,7 @@
 
 /*CONDITINAL COMPILATION OPTIONS****************************/
 
-//#define useLoopingBresenham
+#define useLoopingBresenham
 #define keijoSimulator
 
 
@@ -161,44 +162,58 @@ void RIT_IRQHandler(void){ //THIS VERSION IS FOR RITinterruptBresenham
 					}
 				}
 
-				/*prepare to halfpulse the m1pin in all cases
+				/*prepare to halfpulse the m1pin
 				 * m1pin is notation based on Bresenhams original paper
 				 * the dirPins are already pre-computed before ISR
 				 * for each line plot, for each G1command, dirPins stay same
 				 * */
-				switch(m1parameter){
-				case 1: stepXP->write(pulseState); break;
-				case 3: stepYP->write(pulseState);break;
-				case 5: stepXP->write(pulseState);break;
-				case 7: stepYP->write(pulseState);break;
-				default:break;//should never happen
+				if (!expectm2) {
+					if(m1parameter==1 || m1parameter==5 ){
+						stepXP->write(pulseState);
+					}
+					else if(m1parameter==3 || m1parameter==7){
+						stepYP->write(pulseState);
+					}
+//					switch (m1parameter) {
+//					case 1:
+//						stepXP->write(pulseState);
+//						break;
+//					case 3:
+//						stepYP->write(pulseState);
+//						break;
+//					case 5:
+//						stepXP->write(pulseState);
+//						break;
+//					case 7:
+//						stepYP->write(pulseState);
+//						break;
+//					default:
+//						break; //should never happen
+//					}
 				}
-
 				/*check if perform  halfpulse m2pin for diagonal M2Move
 				 * only perform the necessary checks inside ISR,
 				 * rely on the setupBresenham to have correctly
 				 * configured dirPins before line plot
-				 * */
-
-				/*NOTE!!!
+				 * NOTE!!!
 				 *   expectm2 is static bool initialized at false, so that it keeps
 				 *   track of its own state after each ISR iterating round
 				 *   then, at the end of final halfpulse ISR iterating round, remember to reset expectm2 to false
 				 *   */
-				if(expectm2){ //IF expect m2pinwrite, halfpulse to the m2pin, else it was only m1motormove
-					if(m1parameter==1)
-						stepYP->write(pulseState);
-					else if(m1parameter==3)
-						stepXP->write(pulseState);
-					else if(m1parameter==5)
-						stepYP->write(pulseState);
-					else if(m1parameter==7)
-						stepXP->write(pulseState);
-					else{
-						//should never go to else
-						}
-				}else{
-					//dont halfpulse m2pin, => implies m1motormove
+				else { //IF expect m2pinwrite, halfpulse to the m2pin
+					stepYP->write(pulseState);
+					stepXP->write(pulseState);
+					//					if(m1parameter==1)
+//						stepYP->write(pulseState);
+//					else if(m1parameter==3)
+//						stepXP->write(pulseState);
+//					else if(m1parameter==5)
+//						stepYP->write(pulseState);
+//					else if(m1parameter==7)
+//						stepXP->write(pulseState);
+//					else{
+//						//should never go to else
+//						}
 				}
 
 				pulseState= !pulseState;
@@ -663,7 +678,7 @@ void refactored_BresenhamInterruptAlgorithm(int x0, int y0, int x1, int y1){
 	refactored_decideM2Parameter(oct);
 
 	//refactored_setupBresenhamDirPins(m1parameter, m2parameter);
-	testing_setupBresenhamDirPins(m1parameter,m2parameter);
+	testing_setupBresenhamDirPins(m1parameter,m2parameter); //this function is cleaner code, it was refactored from the other refactored_setupBresenhamDirPins()
 	const char drivingAxis = refactored_decideSwapAxes(oct); //knowing the drivingAxis return value isnt important except for debugging,
 
 
@@ -707,16 +722,16 @@ int adjustm1motor(int curOctant) {
 	switch (M1pattern) {
 		case 1:
 			//XMOTOR RIGHT
-			dirXP->write(true); break;
+			dirXP->write(false); break;
 		case 3:
 			//YMOTOR UP
-			dirYP->write(true); break;
+			dirYP->write(false); break;
 		case 5:
 			//XMOTOR LEFT
-			dirXP->write(false); break;
+			dirXP->write(true); break;
 		case 7:
 			//YMOTOR DOWN
-			dirYP->write(false); break;
+			dirYP->write(true); break;
 		default:break;//shoudlnt be here
 
 	}
@@ -750,20 +765,20 @@ int adjustm2motor(int curOctant) {
 	switch(M2pattern){
 
 	case 2: //xmotor right ymotor up
-		dirXP->write(true);
-		dirYP->write(true);
+		dirXP->write(false);
+		dirYP->write(false);
 		break;
 	case 4: //xmotor left ymotor up
-		dirXP->write(false);
-		dirYP->write(true);
-		break;
-	case 6: //xmotor left ymotor down
-		dirXP->write(false);
-		dirYP->write(false);
-		break;
-	case 8: //xmotor right ymotor down
 		dirXP->write(true);
 		dirYP->write(false);
+		break;
+	case 6: //xmotor left ymotor down
+		dirXP->write(true);
+		dirYP->write(true);
+		break;
+	case 8: //xmotor right ymotor down
+		dirXP->write(false);
+		dirYP->write(true);
 		break;
 	default:break;
 	}
@@ -931,6 +946,33 @@ uint16_t getPeriod(){
 	return temp;
 }
 
+
+/*PEN-SERVO SETUP FOR THE PROJECT, using SCTimer0Large*/
+void setupPenServo(){
+	LPC_SCT0->CONFIG |= (1 << 17); // two 16-bit timers, auto limit, use only the one counter... leave other un-used
+		LPC_SCT0->CTRL_L |= (72-1) << 5; // set prescaler, SCTimer/PWM clock == 72mhz / 72 == 1mhz
+
+
+		LPC_SCT0->MATCHREL[0].L = 20000-1; // match 0 @ 20000 / 1000000Hz =  0,02s period = 50Hz frequency, as required
+		LPC_SCT0->MATCHREL[1].L = 1500; // match 1 used for duty cycle (initialize at center for servo), period = 1500 / 1000000 = 0,0015s = 1.5ms period, as required, for center position
+
+		/*reassigns output to pin
+		 *
+		 *NOTE !!! CHANGE THE MOVABLE PIN TO THE CORRECT PIN FOR PLOTTERPIN!!!
+		 *
+		 *
+		 *
+		 **/
+		Chip_SWM_MovablePortPinAssign( SWM_SCT0_OUT0_O,  0,10);	//SERVOPIN FOR PEN P_0.10 drive it to the center
+
+		LPC_SCT0->EVENT[0].STATE = 0xFFFFFFFF; // event 0 happens in all states
+		LPC_SCT0->EVENT[0].CTRL = (1 << 12); // match 0 condition only
+		LPC_SCT0->EVENT[1].STATE = 0xFFFFFFFF; // event 1 happens in all states
+		LPC_SCT0->EVENT[1].CTRL = (1 << 0) | (1 << 12); // match 1 condition only
+		LPC_SCT0->OUT[0].SET = (1 << 0); // event 0 will set SCTx_OUT0 output, then we get dutycycle
+		LPC_SCT0->OUT[0].CLR = (1 << 1); // event 1 will clear SCTx_OUT0
+		LPC_SCT0->CTRL_L &= ~(1 << 2);// unhalt it by clearing bit 2 of CTRL reg
+}
 
 
 //useful functions for calibrating!!! calibration mode functions to count the steps and get current location
@@ -1235,15 +1277,17 @@ static void execute_task(void*pvParameters) {
 	laserP = &laser;
 	penP = &pen;
 
-	CommandStruct curcmd{CommandStruct::M1, 0, false, 0, 0};
+	CommandStruct curcmd{CommandStruct::M1, 0, true, 0, 0};
 
 	vTaskDelay(50);
 
 	for(;;){
 		xQueueReceive(commandQueue, &curcmd, portMAX_DELAY); //get command from queue
 		if(curcmd.commandWord == CommandStruct::G1 && curcmd.isLegal){
-			curcmd.xCoord /= (int)100; //make coords into steps
-			curcmd.yCoord /= (int)100; // make coords into steps
+			float tempx = curcmd.xCoord / 100.0;
+			float tempy = curcmd.yCoord / 100.0;
+			curcmd.xCoord = std::round(tempx); //make coords into steps
+			curcmd.yCoord = std::round(tempy); // make coords into steps
 
 			/*TODO:: add something in calibration mode to get the currentlocation in coords*/
 			//plotLineGeneral();
@@ -1448,7 +1492,14 @@ static void draw_square_task(void*pvParameters){
 
 
 vTaskDelay(200);
-	//diamond buggy!!!??? sometiems prints sometimes doesnt depedn on beginning delay before drawing???
+
+plotLineGeneral(250,250, 325, 325);
+plotLineGeneral(325, 325, 400,250);
+plotLineGeneral( 400,250,  325, 175);
+plotLineGeneral(325, 175, 250,250);
+
+
+//diamond buggy!!!??? sometiems prints sometimes doesnt depedn on beginning delay before drawing???
 	plotLineGeneral(250,250, 300, 270);
 	plotLineGeneral(300, 270, 350,250);
 	plotLineGeneral(350,250,300,230 );
@@ -1472,9 +1523,7 @@ vTaskDelay(200);
 	plotLineGeneral( 350,230,	230, 230 );
 	plotLineGeneral( 230,230,	230, 270 );
 
-//plotLineGeneral(250, 250, 350, 250);
-//
-//plotLineGeneral(350, 250, 350, 350);
+
 
 
 	for(;;){
@@ -1511,7 +1560,7 @@ int main(void) {
 	// set the priority level of the interrupt
 	// The level must be equal or lower than the maximum priority specified in FreeRTOS config
 	// Note that in a Cortex-M3 a higher number indicates lower interrupt priority
-	NVIC_SetPriority(RITIMER_IRQn, configMAX_SYSCALL_INTERRUPT_PRIORITY + 1);
+	NVIC_SetPriority(RITIMER_IRQn, configMAX_SYSCALL_INTERRUPT_PRIORITY + 5);
 
 	/*craete semaphores and commandqueue*/
 	sbRIT = xSemaphoreCreateBinary();

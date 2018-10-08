@@ -215,6 +215,7 @@ void cdc_task(void *pvParameters)
 		if (ret == LPC_OK) {
 			/*  enable USB interrupts */
 			NVIC_EnableIRQ(USB0_IRQn);
+			NVIC_SetPriority(USB0_IRQn, configMAX_SYSCALL_INTERRUPT_PRIORITY + 6);
 			/* now connect */
 			USBD_API->hw->Connect(g_hUsb, 1);
 		}
