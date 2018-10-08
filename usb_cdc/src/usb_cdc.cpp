@@ -50,6 +50,8 @@
 /*CONDITINAL COMPILATION OPTIONS****************************/
 
 //#define useLoopingBresenham
+#define keijoSimulator
+
 
 /*options and variables when using RITinterruptBresingham*/
 #ifndef useLoopingBresenham //variables for RITinterruptBresingham
@@ -80,19 +82,20 @@ SemaphoreHandle_t sbGo;
 /*bresinghams algortihm variables, notation is based on bresinghams original paper for control of digital plotters*/
 
 //NOTE! loopingBresenham version of Interrupt Handler function uses THIS EXTRA VARIABLE, USE CONDITIONAL COMPILATION...
-volatile std::atomic<int> executeM1orM2(0); //check 1 or 2 inside isr to decide
+volatile std::atomic<int> executeM1orM2(0); //check 1 or 2 inside isr to decide USED FOR loopingBresenham versio
+//TODO:: double check that this variable executeM1orM2 can be conditionally compiled or not, and see that testdraw versions work both
 
 
 
 
-//These global variables are shared usage between either case of Interrupt Handlers...
+//These global variables are shared usage between either case of conditional compilation Interrupt Handlers...
 
-volatile int m1parameter = 0;// for each step m1parameter can be one of four values, determine which pin is driven into which direction
-volatile int m2parameter = 0;//  for each step m2parameter can be one of four values, determine which two pins are driven into which direction at the same time
+volatile int m1parameter = 0;//  determine which pin is driven into which direction, straight motorMove horiz OR vert
+volatile int m2parameter = 0;//   determine which two pins are driven into which direction at the same time, diagonal motorMove
 int octant = 0; //from [1-8] //octant is gotten with a helper function, which processes coords, and based on octant, you decide m1parameter and m2parameters
-const int ppsValue=800;	//arbitrary value for pps
+const int ppsValue=1000;	//arbitrary value for pps
 volatile uint32_t RIT_count; //NOTE!! THIS VARIABLE IS NECESSARY!
-static  std::atomic<bool> calibrationFinished(false);
+static  std::atomic<bool> calibrationFinished(false);	//note, currently not used yet for anything important, at least...
 static volatile std::atomic<bool> pulseState(true);//NOTE!! THIS VARIABLE IS NECESSARY!
 /*global variables ends*/
 
@@ -232,7 +235,7 @@ void RIT_IRQHandler(void){ //THIS VERSION IS FOR RITinterruptBresenham
 /*********************************************************************************************************************************/
 
 
-/*** RIT interrupt handler for looping style Bresenham algorithm, USE CONDITIONAL COMPILATION TO ENABLE ***/
+/*** RIT interrupt handler for looping-style Bresenham algorithm, USE CONDITIONAL COMPILATION TO ENABLE ***/
 #ifdef useLoopingBresenham
 extern "C" {
 void RIT_IRQHandler(void) {
@@ -398,7 +401,7 @@ int getOctant(bool A, bool B, bool C) {
 #ifndef useLoopingBresenham
 
 /*helper functions for RIT_INTERRUPT BRESENHAM */
-int refactored_getOctant(int orig_dx, int orig_dy){
+int refactored_getOctant(const int orig_dx, const int orig_dy){
 	/*check booleans to determine octant number
 	later inside adjustm1motor and adjustm2motor
 	we determine those movemeentpatterns with the octant number
@@ -438,7 +441,7 @@ int refactored_getOctant(int orig_dx, int orig_dy){
 }
 
 /*helper functions for RIT_INTERRUPT BRESENHAM */
-void refactored_decideM1Parameter(int octant){
+void refactored_decideM1Parameter(const int octant){
 	/*from bresenhams original researchpaper, near the
 	tabulated data section
 
@@ -463,7 +466,7 @@ void refactored_decideM1Parameter(int octant){
 }
 
 /*helper functions for RIT_INTERRUPT BRESENHAM */
-void refactored_decideM2Parameter(int octant){
+void refactored_decideM2Parameter(const int octant){
 	/*from bresenhams original researchpaper, near the
 	tabulated data section
 
@@ -488,7 +491,7 @@ void refactored_decideM2Parameter(int octant){
 }
 
 /*helper functions for RIT_INTERRUPT BRESENHAM */
-char refactored_decideSwapAxes(int octant){
+char refactored_decideSwapAxes(const int octant){
 	/*function is used BEFORE executing bresenhams looping
 	OR bresenhams ISR handler function
 
@@ -531,15 +534,74 @@ char refactored_decideSwapAxes(int octant){
 	}
 }
 
+
+void testing_setupBresenhamDirPins(const int m1param, const int m2param){
+
+	switch(m1param){
+	case 1:
+		if(m2param==2){ //prepare m2Motormove for diagonal right&up oct1, and m1Motormove horiz +
+			dirYP->write(false);
+			dirXP->write(false);
+		}
+
+		else if(m2param==8){//prepare m2Motormove for diagonal right&down oct8, and m1Motormove horiz +
+			dirXP->write(false);
+			dirYP->write(true);
+		}
+		break;
+
+	case 3:
+		if(m2param==2){ //prepare for m2Motormove for diagonal right&up oct2, and m1Motormove vert +
+			dirYP->write(false);
+			dirXP->write(false);
+		}
+		else if(m2param==4){//prepare for m2Motormove diagonal left&up oct3, and m1Motormove vert +
+			dirYP->write(false);
+			dirXP->write(true);
+		}
+		break;
+	case 5:
+		if(m2param==4){//prepare for m2Motormove diagonal left&up oct4, and m1Motormove horiz -
+			dirYP->write(false);
+			dirXP->write(true);
+		}
+		else if(m2param==6){//prepare for m2Motormove diagonal left&down oct5, m1Motormove horiz -
+			dirYP->write(true);
+			dirXP->write(true);
+		}
+		break;
+	case 7:
+		if(m2param==8){ //prepare for m2Motormove diagonal right&down oct7, m1Motormove vert -
+			dirXP->write(false);
+			dirYP->write(true);
+		}
+		else if(m2param==6){//prepare for m2Motormove diagonal left&down oct6, m1Motormove vert -
+			dirXP->write(true);
+			dirYP->write(true);
+		}
+		break;
+	default: break; //never should happen!
+	}
+}
+
+
 /*helper functions for RIT_INTERRUPT BRESENHAM */
-void refactored_setupBresenhamDirPins(int m1param, int m2param){
+void refactored_setupBresenhamDirPins(const int m1param, const int m2param){
 	//dir == true, implies decreasing coordinates
 	//dir == false, implies increasing coordinates
 	switch(m1param){
-	case 1: dirXP->write(true); break; //hopefuly go right
-	case 3: dirYP->write(true); break; //hopefuly go up
-	case 5: dirXP->write(false); break; //hopefuly go left
-	case 7: dirYP->write(false); break; //hopefuly go down
+	case 1:
+		dirXP->write(true);
+		break; //hopefuly go right
+	case 3:
+		dirYP->write(true);
+		break; //hopefuly go up
+	case 5:
+		dirXP->write(false);
+		break; //hopefuly go left
+	case 7:
+		dirYP->write(false);
+		break; //hopefuly go down
 	default: break;
 	}
 
@@ -574,7 +636,7 @@ void refactored_setupBresenhamDirPins(int m1param, int m2param){
 	else{
 		//should never get here
 	}
-
+int kakka = 0;
 
 }
 
@@ -600,10 +662,12 @@ void refactored_BresenhamInterruptAlgorithm(int x0, int y0, int x1, int y1){
 	refactored_decideM1Parameter(oct);
 	refactored_decideM2Parameter(oct);
 
-	const char drivingAxis = refactored_decideSwapAxes(oct); //knowing the drivingAxis isnt important except for debugging
+	//refactored_setupBresenhamDirPins(m1parameter, m2parameter);
+	testing_setupBresenhamDirPins(m1parameter,m2parameter);
+	const char drivingAxis = refactored_decideSwapAxes(oct); //knowing the drivingAxis return value isnt important except for debugging,
 
 
-	const int fullsteps =  g_dx;
+	const int fullsteps =  abs(g_dx);
 
 
 	//NOTE! always ritstart with even numbers because by definition, you are halfpulsing the fullpulses
@@ -1143,10 +1207,21 @@ static void execute_task(void*pvParameters) {
 	DigitalIoPin limit4(0, 29, DigitalIoPin::pullup, true); //xmin
 
 	//movement pins for axes
+
+#ifdef keijoSimulator
+	DigitalIoPin dirX(1, 0, DigitalIoPin::output, true);
+	DigitalIoPin dirY(0, 28, DigitalIoPin::output, true);
+	DigitalIoPin stepX(0, 24, DigitalIoPin::output,true);
+	DigitalIoPin stepY(0, 27, DigitalIoPin::output,true);
+#endif
+
+#ifndef keijoSimulator	//regular pin setup, as per pdf pin layout guide!!!
 	DigitalIoPin dirX(0, 28, DigitalIoPin::output, true);
-	DigitalIoPin stepX(0, 27, DigitalIoPin::output, true);
 	DigitalIoPin dirY(1, 0, DigitalIoPin::output, true);
 	DigitalIoPin stepY(0, 24, DigitalIoPin::output, true);
+	DigitalIoPin stepX(0, 27, DigitalIoPin::output, true);
+#endif
+
 
 	//assign global pointers
 	limit1P = &limit1;
@@ -1304,7 +1379,57 @@ static void calibrate_task(void*pvParameters){
 
 static void testdraw_isr_bresenham_task(void*pvParameters){
 	vTaskDelay(500);
-	refactored_BresenhamInterruptAlgorithm(250, 250, 276, 300);
+
+	refactored_BresenhamInterruptAlgorithm(250, 250, 300, 250); //0deg
+	refactored_BresenhamInterruptAlgorithm(300,250,	250,250); //go back
+
+	refactored_BresenhamInterruptAlgorithm(250, 250, 300, 260); //oct1 regular
+	refactored_BresenhamInterruptAlgorithm(300,260,	250,250); //go back
+
+
+	refactored_BresenhamInterruptAlgorithm(250,250,	300,300); //45deg angle
+	refactored_BresenhamInterruptAlgorithm(300,300, 250,250);//go back
+
+	refactored_BresenhamInterruptAlgorithm(250,250, 260, 300); //oct2 regular
+	refactored_BresenhamInterruptAlgorithm(260,300, 250,250); //go back
+
+	refactored_BresenhamInterruptAlgorithm(250,250,	250,300);//90deg angle
+	refactored_BresenhamInterruptAlgorithm(250,300,	250,250); //go back
+
+	refactored_BresenhamInterruptAlgorithm(250,250,	240,300);//oct3 regular
+	refactored_BresenhamInterruptAlgorithm(240,300, 250,250); //go back
+
+	refactored_BresenhamInterruptAlgorithm(250,250,	200,300);//135deg angle
+	refactored_BresenhamInterruptAlgorithm(200,300,	250,250); //go back
+
+	refactored_BresenhamInterruptAlgorithm(250,250,	200,260);//oct4reg
+	refactored_BresenhamInterruptAlgorithm(200,260,	250,250); //go back
+
+	refactored_BresenhamInterruptAlgorithm(250,250,	200,250);//180deg
+	refactored_BresenhamInterruptAlgorithm(200,250, 250,250); //go back
+
+	refactored_BresenhamInterruptAlgorithm(250,250,	200,240);//oct5 reg
+	refactored_BresenhamInterruptAlgorithm(200,240, 250,250); //go back
+
+	refactored_BresenhamInterruptAlgorithm(250,250,	200,200);//225deg
+	refactored_BresenhamInterruptAlgorithm(200,200, 250,250); //go back
+
+	refactored_BresenhamInterruptAlgorithm(250,250, 240,200);//oct6reg
+	refactored_BresenhamInterruptAlgorithm(240,200, 250,250); //go back
+
+	refactored_BresenhamInterruptAlgorithm(250,250, 250,200);//270deg
+	refactored_BresenhamInterruptAlgorithm(250,200, 250,250); //go back
+
+	refactored_BresenhamInterruptAlgorithm(250,250,	260,200);//oct7reg
+	refactored_BresenhamInterruptAlgorithm(260,200,	 250,250); //go back
+
+	refactored_BresenhamInterruptAlgorithm(250,250,	300,200);//315deg
+	refactored_BresenhamInterruptAlgorithm(300,200, 250,250); //go back
+
+	refactored_BresenhamInterruptAlgorithm(250,250, 300,240);//oct8reg
+	refactored_BresenhamInterruptAlgorithm(300,240,	250,250); //go back
+
+
 	for(;;){
 		vTaskDelay(10000);
 	}
