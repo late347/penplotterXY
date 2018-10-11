@@ -33,19 +33,13 @@
 #include <string>
 #include <vector>
 #include <cmath>
+#include "event_groups.h"
 //regular and freertos includes ends
 
 // User-defined classes, structs and includes
 #include "GcodeParser.h"
 #include "CommandStruct.h"
 //user defined includes ends
-
-
-
-
-
-
-
 
 
 /*CONDITINAL COMPILATION OPTIONS****************************/
@@ -55,58 +49,60 @@
 
 
 /*options and variables when using RITinterruptBresingham*/
-#ifndef useLoopingBresenham //variables for RITinterruptBresingham
+ //variables for RITinterruptBresingham
 
 volatile int g_dx, g_dy, g_nabla;
 int g_x_1, g_x_0, g_y_1, g_y_0;
 char g_drivingAxis = 'X';
 
-#endif
+
 /*********************************************************/
 
 
-
-
-
-
-
-
-//global semaphores defined
+//freertos globals defined
 SemaphoreHandle_t syncSemph;
 QueueHandle_t commandQueue;
 SemaphoreHandle_t sbRIT; //NOTE!! THIS SEMAPHORE IS NECESSARY! DOUBLECHECK MAIN() TO SEE IF CREATED CORRECTLY...
 SemaphoreHandle_t sbGo;
-//global semaphores ends
+EventGroupHandle_t eventGroup;
+//freertos globals ends
 
 
-/*global variables defined*/
-/*bresinghams algortihm variables, notation is based on bresinghams original paper for control of digital plotters*/
+/*Bresenham's algorithm variables, and notation is based on Bresenham's published paper
+"Algorithm for computer control of a digital plotter":
+IBM SYSTEMS JOURNAL * VOL. 4 * NO. 1 . 1965
+by J. E. Bresenham
+
+Bresenham's paper  can be useful reference for the pictures of motormovements for m1, and m2,
+and also the tabulated results section near the end was useful. Some functions such as decidem2parameters,
+decidem1parameters, getOctant, and SwapAxes were based on the journal article results.
+*/
 
 //NOTE! loopingBresenham version of Interrupt Handler function uses THIS EXTRA VARIABLE, USE CONDITIONAL COMPILATION...
+
 volatile std::atomic<int> executeM1orM2(0); //check 1 or 2 inside isr to decide USED FOR loopingBresenham versio
-//TODO:: double check that this variable executeM1orM2 can be conditionally compiled or not, and see that testdraw versions work both
-
-
-
+const int forLoopDelay = 1;
 
 //These global variables are shared usage between either case of conditional compilation Interrupt Handlers...
-
 volatile int m1parameter = 0;//  determine which pin is driven into which direction, straight motorMove horiz OR vert
 volatile int m2parameter = 0;//   determine which two pins are driven into which direction at the same time, diagonal motorMove
-int octant = 0; //from [1-8] //octant is gotten with a helper function, which processes coords, and based on octant, you decide m1parameter and m2parameters
-const int ppsValue=1000;	//arbitrary value for pps
+const int ppsValue=800;	//arbitrary value for pps
 volatile uint32_t RIT_count; //NOTE!! THIS VARIABLE IS NECESSARY!
 static  std::atomic<bool> calibrationFinished(false);	//note, currently not used yet for anything important, at least...
-static volatile std::atomic<bool> pulseState(true);//NOTE!! THIS VARIABLE IS NECESSARY!
+static volatile std::atomic<bool> pulseState(true);//NOTE!! THIS VARIABLE IS NECESSARY for rit interrupt handlers!
+
+
+//these are device current coords global variables for plottercoords
+volatile int g_curX = 250;
+volatile int g_curY = 250;
 /*global variables ends*/
 
 
-
 //NOTE!! THESE GLOBAL POINTERS ARE NECESSARY!
-DigitalIoPin *limit1P;
-DigitalIoPin *limit2P;
-DigitalIoPin *limit3P;
-DigitalIoPin *limit4P;
+DigitalIoPin *limitYMinP;
+DigitalIoPin *limitYMaxP;
+DigitalIoPin *limitXMaxP;
+DigitalIoPin *limitXMinP;
 DigitalIoPin *stepXP;
 DigitalIoPin *dirXP;
 DigitalIoPin *stepYP;
@@ -114,7 +110,6 @@ DigitalIoPin *dirYP;
 DigitalIoPin *laserP;
 DigitalIoPin *penP;
 //GlobalPointers End here
-
 
 
 /* the following is required if runtime statistics are to be collected */
@@ -140,9 +135,9 @@ void RIT_IRQHandler(void){ //THIS VERSION IS FOR RITinterruptBresenham
 
 	static bool expectm2 = false; //boolean keeps track of halfpulsing for m2pinwrite in the same ISR round as the m1pinwrite
 
-	if (limit1P != NULL && limit2P != NULL && limit3P != NULL && limit4P != NULL) { //should never be nullpointers when starting ritstart
+	if (limitYMinP != NULL && limitYMaxP != NULL && limitXMaxP != NULL && limitXMinP != NULL) { //should never be nullpointers when starting ritstart
 
-		bool isOK = ( !limit1P->read() && !limit2P->read() && !limit3P->read() && !limit4P->read() ); //check limits status inside ISR
+		bool isOK = ( !limitYMinP->read() && !limitYMaxP->read() && !limitXMaxP->read() && !limitXMinP->read() ); //check limits status inside ISR
 
 		if (RIT_count > 0) { //regular case, "iterate bresenham algorithm" inside interrupt handler
 
@@ -174,24 +169,8 @@ void RIT_IRQHandler(void){ //THIS VERSION IS FOR RITinterruptBresenham
 					else if(m1parameter==3 || m1parameter==7){
 						stepYP->write(pulseState);
 					}
-//					switch (m1parameter) {
-//					case 1:
-//						stepXP->write(pulseState);
-//						break;
-//					case 3:
-//						stepYP->write(pulseState);
-//						break;
-//					case 5:
-//						stepXP->write(pulseState);
-//						break;
-//					case 7:
-//						stepYP->write(pulseState);
-//						break;
-//					default:
-//						break; //should never happen
-//					}
 				}
-				/*check if perform  halfpulse m2pin for diagonal M2Move
+				/*else perform  halfpulse m2pin for diagonal M2Move
 				 * only perform the necessary checks inside ISR,
 				 * rely on the setupBresenham to have correctly
 				 * configured dirPins before line plot
@@ -200,20 +179,9 @@ void RIT_IRQHandler(void){ //THIS VERSION IS FOR RITinterruptBresenham
 				 *   track of its own state after each ISR iterating round
 				 *   then, at the end of final halfpulse ISR iterating round, remember to reset expectm2 to false
 				 *   */
-				else { //IF expect m2pinwrite, halfpulse to the m2pin
+				else {
 					stepYP->write(pulseState);
 					stepXP->write(pulseState);
-					//					if(m1parameter==1)
-//						stepYP->write(pulseState);
-//					else if(m1parameter==3)
-//						stepXP->write(pulseState);
-//					else if(m1parameter==5)
-//						stepYP->write(pulseState);
-//					else if(m1parameter==7)
-//						stepXP->write(pulseState);
-//					else{
-//						//should never go to else
-//						}
 				}
 
 				pulseState= !pulseState;
@@ -221,7 +189,7 @@ void RIT_IRQHandler(void){ //THIS VERSION IS FOR RITinterruptBresenham
 				/*ISR will still be called, when RIT_count == 0,
 				 * but then the interrupt doesnt write to any pins
 				 * when RIT_count==0, interrupt simply ends and
-				 * resets RIT_count and expectm2  */
+				 * resets RIT_count= and expectm2=false  */
 
 			} else { //WE HIT THE WALL, set rit_count=0, stop stepPins, and soon the motor will stop, hopefully
 				stepXP->write(false);
@@ -229,7 +197,7 @@ void RIT_IRQHandler(void){ //THIS VERSION IS FOR RITinterruptBresenham
 				RIT_count = 0;
 			}
 		} else { // "iterate bresenham" has ended, prepare to reset variables and stop interrupt
-
+			pulseState=true; //prepare pulsestate for next G1command
 			expectm2=false; //reset boolean in preparation for the beginning of next G1 command, so it will be false in beginning of ritstart
 			RIT_count=0; //reset RIT_count also, probably not needed though, because ritstart sets it up again
 			Chip_RIT_Disable(LPC_RITIMER); // disable timer
@@ -260,17 +228,16 @@ void RIT_IRQHandler(void) {
 	// Timer then removes the IRQ until next match occurs
 	Chip_RIT_ClearIntStatus(LPC_RITIMER); // clear IRQ flag
 
-	if (limit1P != NULL && limit2P != NULL && limit3P != NULL && limit4P != NULL) {
+	if (limitYMinP != NULL && limitYMaxP != NULL && limitXMaxP != NULL && limitXMinP != NULL) {
 
 		if (RIT_count > 0) {
 			RIT_count--;
 			// do something useful here...
-			bool isOK = (  !limit1P->read() && !limit2P->read() && !limit3P->read() && !limit4P->read()  );
+			bool isOK = (  !limitYMinP->read() && !limitYMaxP->read() && !limitXMaxP->read() && !limitXMinP->read()  );
 
 			if (isOK) {
-				if(executeM1orM2==1){//execute M1 pattern move
-
-					switch(m1parameter){//actuate only one motor straight move
+				if(executeM1orM2==1) { //execute M1 pattern move
+					switch(m1parameter) { //actuate only one motor straight move
 					case 1: stepXP->write(pulseState); break;
 					case 3: stepYP->write(pulseState); break;
 					case 5: stepXP->write(pulseState); break;
@@ -288,6 +255,7 @@ void RIT_IRQHandler(void) {
 				RIT_count = 0;
 			}
 		} else {
+			pulseState=true;
 			Chip_RIT_Disable(LPC_RITIMER); // disable timer
 			// Give semaphore and set context switch flag if a higher priority task was woken up
 			xSemaphoreGiveFromISR(sbRIT, &xHigherPriorityWoken);
@@ -372,48 +340,6 @@ void RIT_start(int count, int us) {
 }
 
 
-
-
-int getOctant(bool A, bool B, bool C) {
-	/*function is based on Bresingham's original paper, in the tabulated information section about the algorithm
-	 *
-	 * check booleans to determine octant number
-	later inside adjustm1motor and adjustm2motor
-	we determine those movemeentpatterns with the octant number
-	A = deltaX < 0
-	B = deltaY < 0
-	C = 0 < abs(x1 - x0) - abs(y1 - y0)
-	*/
-	if (!A && !B && !C) {
-		return 1; //oct1
-	}
-	else if (!A && !B && C) {
-		return 2; //oct2
-	}
-	else if (!A && B && !C) {
-		return 8; //oct8
-	}
-	else if (!A && B && C) {
-		return 7; //oct7
-	}
-	else if (A && !B && !C) {
-		return 4;
-	}
-	else if (A && !B && C) {
-		return 3;
-	}
-	else if (A && B && !C) {
-		return 5;
-	}
-	else {
-		return 6;
-	}
-
-
-}
-
-/** Conditional compilation for RIT INTERRUPT BRESENHAM FUNCTIONS **/
-#ifndef useLoopingBresenham
 
 /*helper functions for RIT_INTERRUPT BRESENHAM */
 int refactored_getOctant(const int orig_dx, const int orig_dy){
@@ -600,61 +526,61 @@ void testing_setupBresenhamDirPins(const int m1param, const int m2param){
 }
 
 
-/*helper functions for RIT_INTERRUPT BRESENHAM */
-void refactored_setupBresenhamDirPins(const int m1param, const int m2param){
-	//dir == true, implies decreasing coordinates
-	//dir == false, implies increasing coordinates
-	switch(m1param){
-	case 1:
-		dirXP->write(true);
-		break; //hopefuly go right
-	case 3:
-		dirYP->write(true);
-		break; //hopefuly go up
-	case 5:
-		dirXP->write(false);
-		break; //hopefuly go left
-	case 7:
-		dirYP->write(false);
-		break; //hopefuly go down
-	default: break;
-	}
-
-
-	if (m1param==1) {
-		if (m2param == 2)
-			dirYP->write(true);
-		else if(m2param==8)
-			dirYP->write(false);
-	}
-
-	else if (m1param==3) {
-		if (m2param == 2)
-			dirXP->write(true);
-		else if (m2param == 4)
-			dirXP->write(false);
-	}
-
-	else if (m1param==5) {
-		if (m2param == 4)
-			dirYP->write(true);
-		else if (m2param == 6)
-			dirYP->write(false);
-	}
-
-	else if (m1param == 7) {
-		if (m2param == 6)
-			dirXP->write(false);
-		else if (m2param == 8)
-			dirXP->write(true);
-	}
-	else{
-		//should never get here
-	}
-int kakka = 0;
-
-}
-
+///*helper functions for RIT_INTERRUPT BRESENHAM */
+//void refactored_setupBresenhamDirPins(const int m1param, const int m2param){
+//	//dir == true, implies decreasing coordinates
+//	//dir == false, implies increasing coordinates
+//	switch(m1param){
+//	case 1:
+//		dirXP->write(true);
+//		break; //hopefuly go right
+//	case 3:
+//		dirYP->write(true);
+//		break; //hopefuly go up
+//	case 5:
+//		dirXP->write(false);
+//		break; //hopefuly go left
+//	case 7:
+//		dirYP->write(false);
+//		break; //hopefuly go down
+//	default: break;
+//	}
+//
+//
+//	if (m1param==1) {
+//		if (m2param == 2)
+//			dirYP->write(true);
+//		else if(m2param==8)
+//			dirYP->write(false);
+//	}
+//
+//	else if (m1param==3) {
+//		if (m2param == 2)
+//			dirXP->write(true);
+//		else if (m2param == 4)
+//			dirXP->write(false);
+//	}
+//
+//	else if (m1param==5) {
+//		if (m2param == 4)
+//			dirYP->write(true);
+//		else if (m2param == 6)
+//			dirYP->write(false);
+//	}
+//
+//	else if (m1param == 7) {
+//		if (m2param == 6)
+//			dirXP->write(false);
+//		else if (m2param == 8)
+//			dirXP->write(true);
+//	}
+//	else{
+//		//should never get here
+//	}
+//int kakka = 0;//for debug only!
+//
+//}
+//
 
 /*main function for  RIT_INTERRUPT BRESENHAM, starts interrupt bresenham*/
 void refactored_BresenhamInterruptAlgorithm(int x0, int y0, int x1, int y1){
@@ -692,13 +618,12 @@ void refactored_BresenhamInterruptAlgorithm(int x0, int y0, int x1, int y1){
 }
 
 
-#endif
 
 
-/** Conditional compilation for LoopingBresenhamFunctions **/
-#ifdef useLoopingBresenham
 
-//returns currently active motorpattern (horizontal or vert motormove) and sets pins
+
+
+//returns currently active motorpattern (horiz or vert motormove) and sets pins
 int adjustm1motor(int curOctant) {
 	/*m1 and m1 patter motor movements are based on Bresenham's original paper
 	 * "Algorithm for computer control of a digital plotter (Figure 5)"
@@ -740,7 +665,7 @@ int adjustm1motor(int curOctant) {
 
 }
 
-//returns currently active motorpattrern, (diagonal motormove) and sets pins
+//returns currently active motorpattern, (diagonal motormove) and sets pins
 int adjustm2motor(int curOctant) {
 	/*m1 and m1 patter motor movements are based on Bresenham's original paper
 	 * "Algorithm for computer control of a digital plotter (Figure 5)"
@@ -787,164 +712,155 @@ int adjustm2motor(int curOctant) {
 	return m2parameter;
 }
 
-#endif
-
-
-
-
-//EXAMPLE FUNCTION SCTSETUP THREE COUNTERS FOR THREE RGB COLORS
-void setupSCTLED(){
-	Chip_SWM_MovablePortPinAssign( SWM_SCT0_OUT0_O,  0,3);	//greenled port0_pin3
-	Chip_SWM_MovablePortPinAssign( SWM_SCT0_OUT1_O,  0,25);	//reassigns output to redled
-	Chip_SWM_MovablePortPinAssign( SWM_SCT1_OUT0_O,  1,1);	/*reassign output to blueled*/
-
-	/*setup counters sct1low and sct0high and sct0low*/
-	LPC_SCT1->CONFIG |= (1<<17); //sct1 lowcounter used autolimit
-	LPC_SCT1->CTRL_L |= (72-1)<<5; //prescale lowcounter sct1
-	LPC_SCT1->MATCHREL[0].L= 255-1;	//sct1 lowcoutner freq
-
-	LPC_SCT0->CONFIG |= (3<<17); //autolimit lowcounter and highcounter
-	LPC_SCT0->CTRL_L |= (72-1) << 5; //prescale lowcounter
-	LPC_SCT0->CTRL_H |= (72-1) << 21; //prescale highcounter
-	LPC_SCT0->MATCHREL[0].L = 255-1;	//sct0 lowcounter  freq
-	LPC_SCT0->MATCHREL[0].H = 255-1;	//sct0 highcounter  freq
-
-	/*set the pulsewidths into matchreload*/
-	LPC_SCT0->MATCHREL[2].L = 250;	// sct0 lowcounter pulsewidth GREENLED
-	LPC_SCT0->MATCHREL[1].H = 250;	// sct0 highcounter pulsewidth REDLED
-	LPC_SCT1->MATCHREL[1].L= 250; //sct1 lowcounter pulsewidth BLUELED
-
-	/*events configured
-	 * 1st frequecny events*/
-	LPC_SCT0->EVENT[0].STATE = 0xFFFFFFFF;	//all states allowed event0
-	LPC_SCT0->EVENT[1].STATE = 0xFFFFFFFF;	//all states allowed event1
-	LPC_SCT1->EVENT[2].STATE = 0xFFFFFFFF; //all states allowed event2
-
-	LPC_SCT0->EVENT[0].CTRL= 1<<12;	//event0 sct0 lowcounter frequency match, select reg0
-	LPC_SCT0->EVENT[1].CTRL = (1<<4) |(1<<12)  ; //event1 sct0 highcounter frequency match, select reg0
-	LPC_SCT1->EVENT[2].CTRL = (1<<12); //event2 sct1 lowcounter frequency match, select reg0
-
-	/*2ndly we have the COUNTER-MATCH events*/
-	LPC_SCT0->EVENT[3].STATE= 0xFFFFFFFF;
-	LPC_SCT0->EVENT[4].STATE= 0xFFFFFFFF;
-	LPC_SCT1->EVENT[5].STATE= 0xFFFFFFFF;
-
-	LPC_SCT0->EVENT[3].CTRL = (1<<12) | (2); //event3 sct0 lowcounter match, select reg2
-	LPC_SCT0->EVENT[4].CTRL = (1<<4) | (1<<12) | (1); //event4 sct0 highcounter match, HEVENTbitTrue,  select reg1
-	LPC_SCT1->EVENT[5].CTRL = (1<<12) | (1); //event5 sct1 lowcounter match, select reg1 (default)
-
-	/*set outputs*/
-	LPC_SCT0->OUT[0].SET =  (1<<0); //event0 sets  sct0 output0
-	LPC_SCT0->OUT[1].SET = (1<<1); //event1 sets sct0 output1 //1<<0
-	LPC_SCT1->OUT[0].SET = (1<<2); //event2 sets sct1 output0
-
-	/*clear outputs with countermatches*/
-	LPC_SCT0->OUT[0].CLR = 	1<<3;			//event3 clears sct0 output0
-	LPC_SCT0->OUT[1].CLR =	1<<4;		//event4 clears sct0 output1
-	LPC_SCT1->OUT[0].CLR =	1<<5;		//event5 clears sct1 output0
-
-	/*unhalt timers*/
-	LPC_SCT0->CTRL_L &=  ~(1<<2);
-	LPC_SCT0->CTRL_H &= ~(1<<2);
-	LPC_SCT1->CTRL_L &= ~(1<<2);
-
-}
-
-
-//getters and setters for SCTimer for three RGB colors
-uint16_t getRed(){
-	return LPC_SCT0->MATCHREL[1].H;
-}
-//getters and setters for SCTimer for three RGB colors
-uint16_t getGreen(){
-	return LPC_SCT0->MATCHREL[2].L;
-}
-//getters and setters for SCTimer for three RGB colors
-uint16_t getBlue(){
-	return LPC_SCT1->MATCHREL[1].L;
-}
-
-//getters and setters for SCTimer for three RGB colors
-void setRGBValues(uint8_t red, uint8_t green, uint8_t blue){
-
-
-	red = 255-red;
-	green= 255 - green;
-	blue=255 -blue;
-
-	LPC_SCT0->MATCHREL[1].H = red;	// sct0 highcounter pulsewidth REDLED
-	LPC_SCT0->MATCHREL[2].L = green;	// sct0 lowcounter pulsewidth GREENLED
-	LPC_SCT1->MATCHREL[1].L= blue; //sct1 lowcounter pulsewidth BLUELED
-}
-
-//EXAMPLE FUNCTION SCTSETUP FOR GREENLED
-void startUpSCT( ){
-	LPC_SCT0->CONFIG |= (1 << 17); // two 16-bit timers, auto limit
-	LPC_SCT0->CTRL_L |= (72-1) << 5; // set prescaler, SCTimer/PWM clock == 72mhz / 72 == 1mhz
-	LPC_SCT0->MATCHREL[0].L = 1000-1; // match 0 @ 1000/1MHz = 1000 us (1 kHz PWM freq)
-	LPC_SCT0->MATCHREL[1].L = 950; // match 1 used for duty cycle (initialize at 50% pwm hopefully)
-
-	/*NOTE!!! SET TO CORRECT PLOTTER PIN BEFORE USAGE!!!
-	 *
-	 *
-	 * */
-	/*reassigns output to greenled*/
-	Chip_SWM_MovablePortPinAssign( SWM_SCT0_OUT0_O,  0,3);	//greenled port0_pin3
-	LPC_SCT0->EVENT[0].STATE = 0xFFFFFFFF; // event 0 happens in all states
-	LPC_SCT0->EVENT[0].CTRL = (1 << 12); // match 0 condition only
-	LPC_SCT0->EVENT[1].STATE = 0xFFFFFFFF; // event 1 happens in all states
-	LPC_SCT0->EVENT[1].CTRL = (1 << 0) | (1 << 12); // match 1 condition only
-	LPC_SCT0->OUT[0].SET = (1 << 0); // event 0 will set SCTx_OUT0
-	LPC_SCT0->OUT[0].CLR = (1 << 1); // event 1 will clear SCTx_OUT0
-	LPC_SCT0->CTRL_L &= ~(1 << 2);// unhalt it by clearing bit 2 of CTRL reg
-}
-
-//EXAMPLE FUNCTION SCTSETUP FOR SERVOACTUATING
-void startUpServoSCT(){
-	LPC_SCT0->CONFIG |= (1 << 17); // two 16-bit timers, auto limit
-	LPC_SCT0->CTRL_L |= (72-1) << 5; // set prescaler, SCTimer/PWM clock == 72mhz / 72 == 1mhz
-
-	/*NOTE PERIOD = t must be equal to 20ms => freq= 50hz
-	 * MATCHREL[1].L == 15000 BECAUSE 15000/ 1000000hz  = 0,015sec = 15ms =servo should be centered at this value of duty cycle
-	 * MARCHREL[0].L == 20000 BECAUSE 20000 / 1000000hz = 0,02sec = 20ms period of signal = 50hz freq of pwm signal*/
-
-	LPC_SCT0->MATCHREL[0].L = 20000-1; // match 0 @ 1000/1MHz = 1000 us (1 kHz PWM freq == 1000hz)
-	LPC_SCT0->MATCHREL[1].L = 1500; // match 1 used for duty cycle (initialize at center for servo)
-
-	/*reassigns output to pin
-	 *
-	 *NOTE !!! CHANGE THE MOVABLE PIN TO THE CORRECT PIN FOR PLOTTERPIN!!!
-	 *
-	 *
-	 *
-	 **/
-	Chip_SWM_MovablePortPinAssign( SWM_SCT0_OUT0_O,  0,8);	//servopin P0.8 drive it to the center EDITED::TODO::
-
-	LPC_SCT0->EVENT[0].STATE = 0xFFFFFFFF; // event 0 happens in all states
-	LPC_SCT0->EVENT[0].CTRL = (1 << 12); // match 0 condition only
-	LPC_SCT0->EVENT[1].STATE = 0xFFFFFFFF; // event 1 happens in all states
-	LPC_SCT0->EVENT[1].CTRL = (1 << 0) | (1 << 12); // match 1 condition only
-	LPC_SCT0->OUT[0].SET = (1 << 0); // event 0 will set SCTx_OUT0
-	LPC_SCT0->OUT[0].CLR = (1 << 1); // event 1 will clear SCTx_OUT0
-	LPC_SCT0->CTRL_L &= ~(1 << 2);// unhalt it by clearing bit 2 of CTRL reg
-
-}
-
-//set sctimer pulsewidth FOR SERVOACTUATING
-void setPWM( int amount ){
-	LPC_SCT0->MATCHREL[1].L = amount;
-}
-//sctimer getpulsewidth FOR SERVOACTUATING
-uint16_t getPulseWidth(){
-	auto val= LPC_SCT0->MATCHREL[1].L;
-	return val;
-}
-
-//sctimer getPeriod FOR SERVOACTUATING
-uint16_t getPeriod(){
-	auto temp =  LPC_SCT0->MATCHREL[0].L;
-	return temp;
-}
+//
+////EXAMPLE FUNCTION SCTSETUP THREE COUNTERS FOR THREE RGB COLORS
+//void setupSCTLED(){
+//	Chip_SWM_MovablePortPinAssign( SWM_SCT0_OUT0_O,  0,3);	//greenled port0_pin3
+//	Chip_SWM_MovablePortPinAssign( SWM_SCT0_OUT1_O,  0,25);	//reassigns output to redled
+//	Chip_SWM_MovablePortPinAssign( SWM_SCT1_OUT0_O,  1,1);	/*reassign output to blueled*/
+//
+//	/*setup counters sct1low and sct0high and sct0low*/
+//	LPC_SCT1->CONFIG |= (1<<17); //sct1 lowcounter used autolimit
+//	LPC_SCT1->CTRL_L |= (72-1)<<5; //prescale lowcounter sct1
+//	LPC_SCT1->MATCHREL[0].L= 255-1;	//sct1 lowcoutner freq
+//
+//	LPC_SCT0->CONFIG |= (3<<17); //autolimit lowcounter and highcounter
+//	LPC_SCT0->CTRL_L |= (72-1) << 5; //prescale lowcounter
+//	LPC_SCT0->CTRL_H |= (72-1) << 21; //prescale highcounter
+//	LPC_SCT0->MATCHREL[0].L = 255-1;	//sct0 lowcounter  freq
+//	LPC_SCT0->MATCHREL[0].H = 255-1;	//sct0 highcounter  freq
+//
+//	/*set the pulsewidths into matchreload*/
+//	LPC_SCT0->MATCHREL[2].L = 250;	// sct0 lowcounter pulsewidth GREENLED
+//	LPC_SCT0->MATCHREL[1].H = 250;	// sct0 highcounter pulsewidth REDLED
+//	LPC_SCT1->MATCHREL[1].L= 250; //sct1 lowcounter pulsewidth BLUELED
+//
+//	/*events configured
+//	 * 1st frequecny events*/
+//	LPC_SCT0->EVENT[0].STATE = 0xFFFFFFFF;	//all states allowed event0
+//	LPC_SCT0->EVENT[1].STATE = 0xFFFFFFFF;	//all states allowed event1
+//	LPC_SCT1->EVENT[2].STATE = 0xFFFFFFFF; //all states allowed event2
+//
+//	LPC_SCT0->EVENT[0].CTRL= 1<<12;	//event0 sct0 lowcounter frequency match, select reg0
+//	LPC_SCT0->EVENT[1].CTRL = (1<<4) |(1<<12)  ; //event1 sct0 highcounter frequency match, select reg0
+//	LPC_SCT1->EVENT[2].CTRL = (1<<12); //event2 sct1 lowcounter frequency match, select reg0
+//
+//	/*2ndly we have the COUNTER-MATCH events*/
+//	LPC_SCT0->EVENT[3].STATE= 0xFFFFFFFF;
+//	LPC_SCT0->EVENT[4].STATE= 0xFFFFFFFF;
+//	LPC_SCT1->EVENT[5].STATE= 0xFFFFFFFF;
+//
+//	LPC_SCT0->EVENT[3].CTRL = (1<<12) | (2); //event3 sct0 lowcounter match, select reg2
+//	LPC_SCT0->EVENT[4].CTRL = (1<<4) | (1<<12) | (1); //event4 sct0 highcounter match, HEVENTbitTrue,  select reg1
+//	LPC_SCT1->EVENT[5].CTRL = (1<<12) | (1); //event5 sct1 lowcounter match, select reg1 (default)
+//
+//	/*set outputs*/
+//	LPC_SCT0->OUT[0].SET =  (1<<0); //event0 sets  sct0 output0
+//	LPC_SCT0->OUT[1].SET = (1<<1); //event1 sets sct0 output1 //1<<0
+//	LPC_SCT1->OUT[0].SET = (1<<2); //event2 sets sct1 output0
+//
+//	/*clear outputs with countermatches*/
+//	LPC_SCT0->OUT[0].CLR = 	1<<3;			//event3 clears sct0 output0
+//	LPC_SCT0->OUT[1].CLR =	1<<4;		//event4 clears sct0 output1
+//	LPC_SCT1->OUT[0].CLR =	1<<5;		//event5 clears sct1 output0
+//
+//	/*unhalt timers*/
+//	LPC_SCT0->CTRL_L &=  ~(1<<2);
+//	LPC_SCT0->CTRL_H &= ~(1<<2);
+//	LPC_SCT1->CTRL_L &= ~(1<<2);
+//}
+//
+//
+////getters and setters for SCTimer for three RGB colors
+//uint16_t getRed(){
+//	return LPC_SCT0->MATCHREL[1].H;
+//}
+////getters and setters for SCTimer for three RGB colors
+//uint16_t getGreen(){
+//	return LPC_SCT0->MATCHREL[2].L;
+//}
+////getters and setters for SCTimer for three RGB colors
+//uint16_t getBlue(){
+//	return LPC_SCT1->MATCHREL[1].L;
+//}
+//
+////getters and setters for SCTimer for three RGB colors
+//void setRGBValues(uint8_t red, uint8_t green, uint8_t blue){
+//
+//
+//	red = 255-red;
+//	green= 255 - green;
+//	blue=255 -blue;
+//
+//	LPC_SCT0->MATCHREL[1].H = red;	// sct0 highcounter pulsewidth REDLED
+//	LPC_SCT0->MATCHREL[2].L = green;	// sct0 lowcounter pulsewidth GREENLED
+//	LPC_SCT1->MATCHREL[1].L= blue; //sct1 lowcounter pulsewidth BLUELED
+//}
+//
+////EXAMPLE FUNCTION SCTSETUP FOR GREENLED
+//void startUpSCT( ){
+//	LPC_SCT0->CONFIG |= (1 << 17); // two 16-bit timers, auto limit
+//	LPC_SCT0->CTRL_L |= (72-1) << 5; // set prescaler, SCTimer/PWM clock == 72mhz / 72 == 1mhz
+//	LPC_SCT0->MATCHREL[0].L = 1000-1; // match 0 @ 1000/1MHz = 1000 us (1 kHz PWM freq)
+//	LPC_SCT0->MATCHREL[1].L = 950; // match 1 used for duty cycle (initialize at 50% pwm hopefully)
+//
+//	/*NOTE!!! SET TO CORRECT PLOTTER PIN BEFORE USAGE!!!
+//	 *
+//	 *
+//	 * */
+//	/*reassigns output to greenled*/
+//	Chip_SWM_MovablePortPinAssign( SWM_SCT0_OUT0_O,  0,3);	//greenled port0_pin3
+//	LPC_SCT0->EVENT[0].STATE = 0xFFFFFFFF; // event 0 happens in all states
+//	LPC_SCT0->EVENT[0].CTRL = (1 << 12); // match 0 condition only
+//	LPC_SCT0->EVENT[1].STATE = 0xFFFFFFFF; // event 1 happens in all states
+//	LPC_SCT0->EVENT[1].CTRL = (1 << 0) | (1 << 12); // match 1 condition only
+//	LPC_SCT0->OUT[0].SET = (1 << 0); // event 0 will set SCTx_OUT0
+//	LPC_SCT0->OUT[0].CLR = (1 << 1); // event 1 will clear SCTx_OUT0
+//	LPC_SCT0->CTRL_L &= ~(1 << 2);// unhalt it by clearing bit 2 of CTRL reg
+//}
+//
+////EXAMPLE FUNCTION SCTSETUP FOR SERVOACTUATING
+//void startUpServoSCT(){
+//	LPC_SCT0->CONFIG |= (1 << 17); // two 16-bit timers, auto limit
+//	LPC_SCT0->CTRL_L |= (72-1) << 5; // set prescaler, SCTimer/PWM clock == 72mhz / 72 == 1mhz
+//
+//	/*NOTE PERIOD = t must be equal to 20ms => freq= 50hz
+//	 * MATCHREL[1].L == 15000 BECAUSE 15000/ 1000000hz  = 0,015sec = 15ms =servo should be centered at this value of duty cycle
+//	 * MARCHREL[0].L == 20000 BECAUSE 20000 / 1000000hz = 0,02sec = 20ms period of signal = 50hz freq of pwm signal*/
+//
+//	LPC_SCT0->MATCHREL[0].L = 20000-1; // match 0 @ 1000/1MHz = 1000 us (1 kHz PWM freq == 1000hz)
+//	LPC_SCT0->MATCHREL[1].L = 1500; // match 1 used for duty cycle (initialize at center for servo)
+//
+//	/*reassigns output to pin
+//	 *NOTE !!! CHANGE THE MOVABLE PIN TO THE CORRECT PIN FOR PLOTTERPIN!!!
+//	 **/
+//	Chip_SWM_MovablePortPinAssign( SWM_SCT0_OUT0_O,  0,8);	//servopin P0.8 drive it to the center EDITED::TODO::
+//
+//	LPC_SCT0->EVENT[0].STATE = 0xFFFFFFFF; // event 0 happens in all states
+//	LPC_SCT0->EVENT[0].CTRL = (1 << 12); // match 0 condition only
+//	LPC_SCT0->EVENT[1].STATE = 0xFFFFFFFF; // event 1 happens in all states
+//	LPC_SCT0->EVENT[1].CTRL = (1 << 0) | (1 << 12); // match 1 condition only
+//	LPC_SCT0->OUT[0].SET = (1 << 0); // event 0 will set SCTx_OUT0
+//	LPC_SCT0->OUT[0].CLR = (1 << 1); // event 1 will clear SCTx_OUT0
+//	LPC_SCT0->CTRL_L &= ~(1 << 2);// unhalt it by clearing bit 2 of CTRL reg
+//
+//}
+//
+////set sctimer pulsewidth FOR SERVOACTUATING
+//void setPWM( int amount ){
+//	LPC_SCT0->MATCHREL[1].L = amount;
+//}
+////sctimer getpulsewidth FOR SERVOACTUATING
+//uint16_t getPulseWidth(){
+//	auto val= LPC_SCT0->MATCHREL[1].L;
+//	return val;
+//}
+//
+////sctimer getPeriod FOR SERVOACTUATING
+//uint16_t getPeriod(){
+//	auto temp =  LPC_SCT0->MATCHREL[0].L;
+//	return temp;
+//}
 
 
 /*PEN-SERVO SETUP FOR THE PROJECT, using SCTimer0Large*/
@@ -952,8 +868,9 @@ void setupPenServo(){
 	LPC_SCT0->CONFIG |= (1 << 17); // two 16-bit timers, auto limit, use only the one counter... leave other un-used
 		LPC_SCT0->CTRL_L |= (72-1) << 5; // set prescaler, SCTimer/PWM clock == 72mhz / 72 == 1mhz
 
-
-		LPC_SCT0->MATCHREL[0].L = 20000-1; // match 0 @ 20000 / 1000000Hz =  0,02s period = 50Hz frequency, as required
+		//matchrel1 controls duty cycle , min=1000, max=2000, center=1500
+		//matchrel0 controls the main frequency
+		LPC_SCT0->MATCHREL[0].L = 20000-1; // match 0 @ 20000 / 1000000Hz =  0,02s period = 50Hz drivingfrequency, as required
 		LPC_SCT0->MATCHREL[1].L = 1500; // match 1 used for duty cycle (initialize at center for servo), period = 1500 / 1000000 = 0,0015s = 1.5ms period, as required, for center position
 
 		/*reassigns output to pin
@@ -974,6 +891,26 @@ void setupPenServo(){
 		LPC_SCT0->CTRL_L &= ~(1 << 2);// unhalt it by clearing bit 2 of CTRL reg
 }
 
+/*PEN-SERVO SET NEW VALUE FOR THE PROJECT, using SCTimer0Large*/
+void setPenValue(int amount) {
+	bool allowed = false;
+	int newval = 0;
+	allowed = (0 <= amount) && (amount <= 255);
+
+	//map the smaller values from [0, 1, 2, ... 254, 255]
+	//into the larger values from [1000,1001,1002... 1500,1501...1999,2000]
+	if (allowed) {
+		if (amount > 250) {
+			newval = 2000;
+		} else {
+			//check what value it was and increment by correct amount
+			newval = 4 * amount + 1000;
+		}
+		LPC_SCT0->MATCHREL[1].L = newval;
+	}
+}
+
+
 
 //useful functions for calibrating!!! calibration mode functions to count the steps and get current location
 void stepVert(){
@@ -991,131 +928,136 @@ void stepHoriz(){
 	vTaskDelay(1);
 }
 
-void moveRight(){
 
-	dirXP->write(true);
-	stepXP->write(true);
-	vTaskDelay(2);
-	stepXP->write(false);
-	vTaskDelay(2);
+
+
+
+//same function as in Bresenham's notation helperfunction F() which deduces the correct octant to draw inside of
+int getOctant(bool A, bool B, bool C) {
+	/*function is based on Bresingham's original paper, in the tabulated information section about the algorithm
+	 *
+	 * check booleans to determine octant number
+	later inside adjustm1motor and adjustm2motor
+	we determine those movemeentpatterns with the octant number
+	A = deltaX < 0
+	B = deltaY < 0
+	C = 0 < abs(x1 - x0) - abs(y1 - y0)
+	*/
+	if (!A && !B && !C) {
+		return 1; //oct1
+	}
+	else if (!A && !B && C) {
+		return 2; //oct2
+	}
+	else if (!A && B && !C) {
+		return 8; //oct8
+	}
+	else if (!A && B && C) {
+		return 7; //oct7
+	}
+	else if (A && !B && !C) {
+		return 4;
+	}
+	else if (A && !B && C) {
+		return 3;
+	}
+	else if (A && B && !C) {
+		return 5;
+	}
+	else {
+		return 6;
+	}
 }
-
-void moveLeft(){
-	dirXP->write(false);
-	stepXP->write(true);
-	vTaskDelay(2);
-	stepXP->write(false);
-	vTaskDelay(2);
-}
-
-void moveUp(){
-	dirYP->write(true);
-	stepYP->write(true);
-	vTaskDelay(2);
-	stepYP->write(false);
-	vTaskDelay(2);
-}
-
-void moveDown(){
-	dirYP->write(false);
-	stepYP->write(true);
-	vTaskDelay(2);
-	stepYP->write(false);
-	vTaskDelay(2);
-}
-
-/** Conditional compilation for LoopingBresenhamFunctions **/
-#ifdef useLoopingBresenham
 
 //special case for purely horizontal moves BRESENHAM loopingBresenham
 void plotLineHoriz(int x0, int y0, int x1, int y1) {
 	int dx = x1 - x0;
 	int dy = y1 - y0;
-
+	int xincr = 0;
+	int localX=x0;
 	executeM1orM2 = 1; //notify isr global variable which patternm1 or patternm2 to execute, in this case only one motor move => hence m1pattern
 	if (dx > 0) {
 		//xmotordir right
-		dirXP->write(true);
-		//set xmotor dir right
+		xincr=1;
+		dirXP->write(false);
 		m1parameter = 1; //set global volatile variable to notify isr which m1 motor to actjuate
 	} else {
 		//xmotordir left
-		dirXP->write(false);
-		//set xmotor dir left
+		dirXP->write(true);
 		m1parameter = 5;
+		xincr = -1;
+
 	}
 
-	for (int x = 0; x <= abs(dx); x++) {
+
+	for (int x = 1; x <= abs(dx); x++) {
 		//write to motordir to drive left or right
 		RIT_start(2, 1000000 / (2 * ppsValue));
-
+		localX += xincr; //update  coords
 	}
+	g_curX=localX;
 }
 
 //special case for purely vertical moves BRESENHAM loopingBresenham
 void plotLineVert(int x0, int y0, int x1, int y1) {
+
 	int dx = x1 - x0;
 	int dy = y1 - y0;
 	executeM1orM2 = 1; //notify isr which patternm1 or patternm2 to execute, in this case only one motor move => hence m1pattern
-
+    int yincr=0;
+    int localY=y0;
 	if (dy > 0) {
 		//y motor up
 		m1parameter = 3; //notify isr with global variable to expect ymotor up
-		dirYP->write(true);
+		dirYP->write(false);
+		yincr = 1;
 	} else {
 		//ymotor down
 		m1parameter = 7; //notify isr with global variable to expect ymotor down
-		dirYP->write(false);
+		dirYP->write(true);
+		yincr = -1;
 	}
 
-	for (int y = 0; y <= abs(dy); y++) {
+	for (int y = 1; y <= abs(dy); y++) {
 		//write motorpin up or down
 		RIT_start(2, 1000000 / (2 * ppsValue));
+		localY += yincr;
 	}
+	g_curY=localY;
 }
 
 //BRESENHAM HELPER FUNCTION loopingBresenham
-void plotLineLow(int x0, int y0, int x1, int y1) {
-
-	/*setting up required global variables for algorithm:
-	interrupt handler uses following global variables:
-	volatile int dx
-	volatile int dy
-	volatile int nabla //decisionparameter
-	volatile int stepCount
-	volatile int RIT_Counter = abs(dx) //it means x is driving axis
-	start rit_counter with 2*abs(dx)
-	*/
-
-	int dx = x1 - x0;
-	int dy = y1 - y0;
-	int yincr = 1;
-
-	if (dy < 0) {
-		yincr = -1;
-		dy = -dy;
+void plotLineLow(int x0, int y0, int x1, int y1, bool makeSwap) {
+	if (makeSwap) {
+		std::swap(x0, x1);
+		std::swap(y0, y1);
 	}
+	int yincr = 1;
+	int xincr = 1;
+	int dx=x1-x0, dy=y1-y0;
+	if(dy < 0)
+		yincr = -1;
+	if(dx < 0)
+		xincr = -1;
+
+
+	dx = abs(x1 - x0);
+	dy = abs(y1 - y0);
+
+	int localX=x0, localY=y0;
 
 	int nabla = 2 * dy - dx; //decision parameter
-	int y = y0;
 	int x = x0;
 
-	/*instead of loop running with stepping, start rit_counter
-	with driving axis value such as... ritcount = 2*  ( convert to steps the following  abs(drivingaxiscoord1-drivingaxiscoord0))
-	rit_count stops when reaches value zero (decrement in isr)
-	 //2x beacuse halfstepping with isr
-	 stepcount = 0.5 * ritcount
-	*/
-
-	for (x; x <= x1; x++) { //x is driving axis
+	for (x; x < x1; x++) { //x is driving axis
 		if (nabla > 0) {
-			y = y + yincr;
-			nabla = nabla - 2 * dx;//update decisionparameter nabla
+			nabla = nabla - 2 * dx; //update decisionparameter nabla
 			/*execute diagonal m2 move (step x and y motor at same time)???
 			 m2 move type depends on the octant
-			m1 move type depends on octant also (m1 is either horiz or vert move)*/
+			 m1 move type depends on octant also (m1 is either horiz or vert move)*/
 			executeM1orM2 = 2; //set global volatile boolean, so that interrupthandler knows which movementpattern to execute
-			RIT_start(2, 1000000/(2*ppsValue) );
+			RIT_start(2, 1000000 / (2 * ppsValue));
+
 		}
 		else {
 			//execute m1 move
@@ -1124,45 +1066,40 @@ void plotLineLow(int x0, int y0, int x1, int y1) {
 		}
 		nabla = nabla + 2 * dy;//update decisionparameter nabla
 	}
+
+
 }
 
 
 //BRESENHAM HELPER FUNCTION loopingBresenham
-void plotLineHigh(int x0, int y0, int x1, int y1) {
-
-	/*setting up required global variables for algorithm:
-	interrupt handler uses following global variables:
-	volatile int dx
-	volatile int dy
-	volatile int nabla //decisionparameter
-	volatile int stepCount
-	volatile int RIT_Counter = abs(dy) //it means y is driving axis
-	start rit_counter with 2*abs(dy)
-	*/
-
-	int dx = x1 - x0;
-	int dy = y1 - y0;
-	int xincr = 1;
-
-	if (dx < 0) {
-		xincr = -1;
-		dx = -dx;
+void plotLineHigh(int x0, int y0, int x1, int y1, bool makeSwap) {
+	if(makeSwap){
+		std::swap(x0,x1);
+		std::swap(y0,y1);
 	}
 
+	int xincr = 1;
+    int yincr = 1;
+	int dx=x1-x0, dy=y1-y0;
+	if(dx < 0)
+		xincr = -1;
+	if(dy<0)
+		yincr = -1;
+
+
+
+	 dx = abs(x1 - x0);
+	 dy = abs(y1 - y0);
+
+
+
+
 	int nabla = 2 * dx - dy; //decision parameter
-	int x = x0;
 	int y = y0;
+	int localX=x0, localY=y0;
 
-	/*instead of loop running with stepping, start rit_counter
-	with driving axis value such as... ritcount = 2*  ( convert to steps the following  abs(drivingaxiscoord1-drivingaxiscoord0))
-	rit_count stops when reaches value zero (decrement in isr)
-	 //2x beacuse halfstepping with isr
-	 stepcount = 0.5 * ritcount
-	*/
-
-	for (y; y <= y1; y++) { //y is driving axis
+	for (y; y < y1; y++) { //y is driving axis
 		if (nabla > 0) {
-			x += xincr;
 			nabla = nabla - 2 * dy;//update decisionparameter nabla
 			//execute diagonal m2 move (step x and y motor at same time)
 			// m2 move type depends on the octant
@@ -1186,75 +1123,82 @@ void plotLineGeneral(int x0, int y0, int x1, int y1) {
 	 angle 45deg to 90deg == oct 2
 	 etc...
 	 */
+	int oct = 0;
+	int kakka = -1;
+
+	/*NOTE!! if you get same startpoint and endingpoint, DONT draw anything, GOTO ENDINGPOINT*/
+	if (x0 == x1 && y0 == y1) { //zero length line, dont draw anything for safety purposes!
+		goto endingpoint;
+	}
 
 	if (x0 == x1) {
-		//plot vertical case
+		//plot vertical case, special case
 		plotLineVert(x0, y0, x1, y1);
 	} else if (y0 == y1) {
-		//plot horizontal case
+		//plot horizontal case, special case
 		plotLineHoriz(x0, y0, x1, y1);
 	}
 
+	/*Plot regular case looping bresenham*/
 	else {
 		bool res = abs(y1 - y0) < abs(x1 - x0);
-		//octant getting is based on bresenhams original paper and usage of helper function to get the correct octant
-		octant = 1;
-		octant = getOctant((x1 - x0 < 0), (y1 - y0 < 0), (abs(x1 - x0) - abs(y1 - y0) < 0) );
-		//m1parameter and m2parameters are based on bresenhams original paper with  single motormove and diagonal (dual motor)move
-		m2parameter = adjustm2motor(octant);
-		m1parameter = adjustm1motor(octant);
+		bool doSwap = false;
+		oct = getOctant((x1 - x0 < 0), (y1 - y0 < 0),
+				(abs(x1 - x0) - abs(y1 - y0) < 0));
+		m2parameter = adjustm2motor(oct);
+		m1parameter = adjustm1motor(oct);
 
 		if (res) {
-			int kakka=0;//for debug only
 			if (x0 > x1) {
-				//octant 4, octant 5???
-				plotLineLow(x1, y1, x0, y0);
-			} else {
-				//no swap
-				//octant 1, octant 8???
-				plotLineLow(x0, y0, x1, y1);
+				doSwap = true;
 			}
+			plotLineLow(x0, y0, x1, y1, doSwap);
 		} else {
-			int kakka=0;//for debug only
 			if (y0 > y1) {
-				// octant 6, octant 7 ???
-				plotLineHigh(x1, y1, x0, y0);
-			} else {
-				//no swap
-				// octant 2, octant 3 ???
-				plotLineHigh(x0, y0, x1, y1);
+				doSwap = true;
 			}
+			plotLineHigh(x0, y0, x1, y1, doSwap);
 		}
-
 	}
+
+	endingpoint:  //label for the special case of same startpoint and same endpoint, dont do anything
+	kakka = 0; //for debug only!
+	/*UPDATE GLOBAL COORDS, ASSUME ALGORITHM WORKED AND SET CURCOORDS=ENDCOORDS
+	 * seems to work, in example test_draw_tasks */
+	g_curX=x1, g_curY=y1;
+
 }
 
-#endif
 
 
 
 
 
-//executes G1 and pen and laser commands
+
+//executes G1movementcommands, pencilservocommands, and lasercommands
 static void execute_task(void*pvParameters) {
 
 	//laser and pen pins, hopefully correct???
-	DigitalIoPin laser(0,12,DigitalIoPin::output, true);
 	DigitalIoPin pen(0,10, DigitalIoPin::pullup, true);
+	DigitalIoPin laser(0,12,DigitalIoPin::output, true);
+
+	//drive laserpin low
 	laser.write(false);
-	//limit pins
-	DigitalIoPin limit2(0, 0, DigitalIoPin::pullup, true); // ymax
-	DigitalIoPin limit1(1, 3, DigitalIoPin::pullup, true); // ymin
-	DigitalIoPin limit3(0, 9, DigitalIoPin::pullup, true); //xmax
-	DigitalIoPin limit4(0, 29, DigitalIoPin::pullup, true); //xmin
+	laserP = &laser;
 
 	//movement pins for axes
 
-#ifdef keijoSimulator
+#ifdef keijoSimulator //swap pins-setup for easier debugging for keijosimulator, limit pins and dirpins and step pins so that Y->X and X<-Y
+	//invert limitpins and dirPins and stepPins
 	DigitalIoPin dirX(1, 0, DigitalIoPin::output, true);
 	DigitalIoPin dirY(0, 28, DigitalIoPin::output, true);
 	DigitalIoPin stepX(0, 24, DigitalIoPin::output,true);
 	DigitalIoPin stepY(0, 27, DigitalIoPin::output,true);
+
+	DigitalIoPin limitYMin(0, 29, DigitalIoPin::pullup, true);
+	DigitalIoPin limitYMax(0 ,9 , DigitalIoPin::pullup, true);
+	DigitalIoPin limitXMax( 0, 0, DigitalIoPin::pullup, true);
+	DigitalIoPin limitXMin(1, 3, DigitalIoPin::pullup, true);
 #endif
 
 #ifndef keijoSimulator	//regular pin setup, as per pdf pin layout guide!!!
@@ -1262,36 +1206,66 @@ static void execute_task(void*pvParameters) {
 	DigitalIoPin dirY(1, 0, DigitalIoPin::output, true);
 	DigitalIoPin stepY(0, 24, DigitalIoPin::output, true);
 	DigitalIoPin stepX(0, 27, DigitalIoPin::output, true);
+	DigitalIoPin limitYMin(1, 3, DigitalIoPin::pullup, true);
+	DigitalIoPin limitYMax(0, 0, DigitalIoPin::pullup, true);
+	DigitalIoPin limitXMax(0, 9, DigitalIoPin::pullup, true);
+	DigitalIoPin limitXMin(0, 29, DigitalIoPin::pullup, true);
 #endif
 
 
 	//assign global pointers
-	limit1P = &limit1;
-	limit2P = &limit2;
-	limit3P = &limit3;
-	limit4P = &limit4;
+	limitYMinP = &limitYMin;
+	limitYMaxP = &limitYMax;
+	limitXMinP = &limitXMin;
+	limitXMaxP = &limitXMax;
 	stepXP = &stepX;
 	dirXP = &dirX;
 	stepYP = &stepY;
 	dirYP = &dirY;
-	laserP = &laser;
 	penP = &pen;
 
 	CommandStruct curcmd{CommandStruct::M1, 0, true, 0, 0};
 
 	vTaskDelay(50);
 
+	//wait until calibration task finishes!
+	/*TODO:: add something in calibration mode to get the currentlocation in coords*/
+	/*TODO:: CALIBRATION TASK IS BUGGED!!! LIMIT PINS DONT WORK PROPERLY IN KEIJOSIMULATOR*/
+
+	xEventGroupWaitBits(eventGroup, 0x1, pdFALSE, pdFALSE, portMAX_DELAY);
+
 	for(;;){
 		xQueueReceive(commandQueue, &curcmd, portMAX_DELAY); //get command from queue
+
 		if(curcmd.commandWord == CommandStruct::G1 && curcmd.isLegal){
+
+			//assume 1 fullstep == 1.0mm,
 			float tempx = curcmd.xCoord / 100.0;
 			float tempy = curcmd.yCoord / 100.0;
-			curcmd.xCoord = std::round(tempx); //make coords into steps
-			curcmd.yCoord = std::round(tempy); // make coords into steps
 
-			/*TODO:: add something in calibration mode to get the currentlocation in coords*/
-			//plotLineGeneral();
+			int roundX = std::round(tempx);
+			int roundY = std::round(tempy);
 
+			int kakka1 = 0; //for debug only!!
+#ifndef useLoopingBresenham //ritInterrupt-Driven Bresenham
+			refactored_BresenhamInterruptAlgorithm(g_curX, g_curY, roundX,roundY );
+			g_curX=roundX;//update current coords to the "dest coords, after move"
+			g_curY=roundY;
+			int kakka3=0;//for debug only!
+#endif
+#ifdef useLoopingBresenham //forlooping Bresenham
+			//forlooping bresenham updates globalcoords internally! this is desired (updates coords in loopcounting)!
+			plotLineGeneral(g_curX, g_curY, roundX,roundY);
+			int kakka2=0;//for debug only!
+#endif
+
+
+			int kakka = 0;//for debug only!
+
+
+		}else if(curcmd.commandWord == CommandStruct::M1 && curcmd.isLegal){
+			setPenValue(curcmd.commandNumber);
+			vTaskDelay(100); //small delay to allow pencilservo time to settle
 		}
 	}
 
@@ -1299,6 +1273,7 @@ static void execute_task(void*pvParameters) {
 
 //PARSER TASK gets USB-receive and parses the Gcode commands
 static void parse_task(void*pvParameters) {
+
 	//bool LedState = false;
 	GcodeParser parser;
 	const int allocsize = 80 + 1;
@@ -1315,6 +1290,8 @@ static void parse_task(void*pvParameters) {
 	//small initial delay
 	vTaskDelay(75);
 
+	//wait until calibration task finishes!
+	xEventGroupWaitBits(eventGroup, 0x1, pdFALSE, pdFALSE, portMAX_DELAY);
 	while (1) {
 
 		char str[allocsize] { 0 }; //str buffer is allocated
@@ -1322,7 +1299,7 @@ static void parse_task(void*pvParameters) {
 		str[len] = 0; /* make sure we have a zero at the end so that we can print the data */
 		cppstring += std::string(str); //append strbuffer into the "oldcppstring"
 		auto enterInd = cppstring.find('\n', 0); //find enterIndex
-		vTaskDelay(10); //vtaskdelay is used for purpose of itmprint not bugging-out
+		//vTaskDelay(5); //vtaskdelay is used for purpose of itmprint not bugging-out
 
 		if (enterInd != std::string::npos) {
 			gcode = cppstring.substr(0, enterInd); //found entersign, get one line of gcode
@@ -1330,8 +1307,13 @@ static void parse_task(void*pvParameters) {
 			ITM_write(gcode.c_str());
 			ITM_write("\r\n");
 			//vTaskDelay(20);
-			CommandStruct cmd { CommandStruct::M1, -2147483648, false,
-					-2147483648, -2147483648 };
+			CommandStruct cmd {
+				CommandStruct::M1,
+				-2147483648,
+				false,
+				-2147483648,
+				-2147483648
+			};
 			cmd = parser.parseCommand(gcode);//send the gcode string into the parser
 
 			if (cmd.commandWord == CommandStruct::M10 && cmd.isLegal) {
@@ -1343,14 +1325,13 @@ static void parse_task(void*pvParameters) {
 			} else {
 				USB_send((uint8_t*) badMessage, strlen(badMessage));
 			}
-			//NOTE parseCommand memberfuncion clears tokens automatically now!
 			memset(str, 0, allocsize);
-			//Board_LED_Set(1, LedState);
-			//LedState = (bool) !LedState;
 			gcode = "";
-		} else {
-			//else, YOU DIDNT FIND COMPLETE GCODE, WAIT FOR MORE STRBUFFER APPENDED CHARS!
 		}
+
+
+		//else, YOU DIDNT FIND COMPLETE GCODE, WAIT FOR MORE STRBUFFER APPENDED CHARS!
+
 	}
 
 }
@@ -1365,66 +1346,81 @@ static void calibrate_task(void*pvParameters){
 	int xTouches = 0;
 	int halfY;
 	int halfX;
-
+	float temp1,temp2;
 	bool countingY = false;
 	bool countingX = false;
-
+goto endpoint;
 	//find y limits and count ysteps
 	while (yTouches < 2) { //count ysteps
-		if (!limit1P->read() && !limit2P->read()) {
+		if (!limitYMinP->read() && !limitYMaxP->read()) {
 			stepVert();
 			if (countingY) {
 				++ysteps;
 			}
-		} else if (limit1P->read() != limit2P->read()) {
+		} else if (limitYMinP->read() != limitYMaxP->read()) {
 			++yTouches;
 			if (ysteps == 0) {
 				countingY = true;
 			}
 			dirYP->write(!dirYP->read());
-			while (limit1P->read() || limit2P->read()) {
+			while (limitYMinP->read() || limitYMaxP->read()) {
 				stepVert();
 			}
 		}
 	}
 
 	//drive back y axis to the center
-	halfY = ysteps / 2;
+	temp1 = (float)ysteps/2.0;
+	halfY = std::round(temp1);
+
+
 	for (int k = 0; k < halfY; k++) {
 		stepVert();
 	}
 
 	while (xTouches < 2) { //count xsteps
-		if (!limit3P->read() && !limit4P->read()) {
+		if (!limitXMinP->read() && !limitXMaxP->read()) {
 			stepHoriz();
 			if (countingX) {
 				++xsteps;
 			}
-		} else if (limit3P->read() != limit4P->read()) {
+		} else if (limitXMinP->read() != limitXMaxP->read()) {
 			++xTouches;
 			if (xsteps == 0) {
 				countingX = true;
 			}
 			dirXP->write(!dirXP->read());
-			while (limit3P->read() || limit4P->read()) {
+			while (limitXMinP->read() || limitXMaxP->read()) {
 				stepHoriz();
 			}
 		}
 	}
 	/*driveback to halfpoint x axis*/
-	halfX = xsteps / 2;
+
+	temp2 = (float)xsteps/2.0;
+	halfX = std::round(temp2);
+
 	for (int j = 0; j < halfX; j++) {
 		stepHoriz();
 	}
 
+	endpoint:
+	vTaskDelay(1000);
+	g_curX=500;
+	g_curY=500;
+	/*set eventbit0 true
+	 * WAKES UP OTHER TASKS to prepare for mdraw commands*/
+	xEventGroupSetBits(eventGroup, 0x1);
+	 vTaskSuspend( NULL );
 }
 
-#ifndef useLoopingBresenham
+
 
 static void testdraw_isr_bresenham_task(void*pvParameters){
 	vTaskDelay(500);
-
+	setPenValue(90);
 	refactored_BresenhamInterruptAlgorithm(250, 250, 300, 250); //0deg
+
 	refactored_BresenhamInterruptAlgorithm(300,250,	250,250); //go back
 
 	refactored_BresenhamInterruptAlgorithm(250, 250, 300, 260); //oct1 regular
@@ -1481,81 +1477,114 @@ static void testdraw_isr_bresenham_task(void*pvParameters){
 
 }
 
-#endif
 
 
 
-/** Conditional compilation LoopingBresenham testing task for the plottersimulator **/
-#ifdef useLoopingBresenham
-
-static void draw_square_task(void*pvParameters){
 
 
-vTaskDelay(200);
 
-plotLineGeneral(250,250, 325, 325);
-plotLineGeneral(325, 325, 400,250);
-plotLineGeneral( 400,250,  325, 175);
-plotLineGeneral(325, 175, 250,250);
+static void draw_square_task(void*pvParameters) {
 
+	vTaskDelay(200);
+	setPenValue(90);
+	vTaskDelay(100); //give servo time to move down, before draw
+	plotLineGeneral(250,250, 300,250);
+	plotLineGeneral(300,250, 300,300);
+	plotLineGeneral(300,300, 250,300);
+	plotLineGeneral(250,300, 250,250);
 
-//diamond buggy!!!??? sometiems prints sometimes doesnt depedn on beginning delay before drawing???
-	plotLineGeneral(250,250, 300, 270);
-	plotLineGeneral(300, 270, 350,250);
-	plotLineGeneral(350,250,300,230 );
-	plotLineGeneral(300,230, 250,250);
+	//plot 45deg twisted square
+	plotLineGeneral(250, 250, 325, 325);
+	/*BUG IS SOMEWHERE AFTER THIS LINE!!!
+	 * global coord variables dont update*/
+	plotLineGeneral(325, 325, 400, 250);
+	plotLineGeneral(400, 250, 325, 175);
+	plotLineGeneral(325, 175, 250, 250);
+
+	//diamond buggy!!!??? sometiems prints sometimes doesnt depedn on beginning delay before drawing???
+	plotLineGeneral(250, 250, 300, 270);
+	plotLineGeneral(300, 270, 350, 250);
+	plotLineGeneral(350, 250, 300, 230);
+	plotLineGeneral(300, 230, 250, 250);
 
 	//another diamond
 	/*this diamond works ok*/
-	plotLineGeneral(250,250,	240,270 );
-	plotLineGeneral(240,270,	230,250 );
-	plotLineGeneral(230,250,	240,230);
-	plotLineGeneral(240,230,	250,250);
+	plotLineGeneral(250, 250, 240, 270);
+	plotLineGeneral(240, 270, 230, 250);
+	plotLineGeneral(230, 250, 240, 230);
+	plotLineGeneral(240, 230, 250, 250);
 
 	//reset the diamond and prepare to draw square
-	plotLineGeneral(250,250,	240,270 );
-	plotLineGeneral(240,270,	230,250 );
+	plotLineGeneral(250, 250, 240, 270);
+	plotLineGeneral(240, 270, 230, 250);
 
 	//draw rectangle
-	plotLineGeneral( 230,250,	230, 270 );
-	plotLineGeneral( 230,270,	350, 270 );
-	plotLineGeneral( 350,270,	350, 230 );
-	plotLineGeneral( 350,230,	230, 230 );
-	plotLineGeneral( 230,230,	230, 270 );
+	plotLineGeneral(230, 250, 230, 270);
+	plotLineGeneral(230, 270, 350, 270);
+	plotLineGeneral(350, 270, 350, 230);
+	plotLineGeneral(350, 230, 230, 230);
+	plotLineGeneral(230, 230, 230, 270);
 
-
-
-
-	for(;;){
+	for (;;) {
 		vTaskDelay(100);
 	}
 }
 
-#endif
+static void draw_square_task1(void*pvParameters) {
 
+	vTaskDelay(200);
+	setPenValue(90);
+	vTaskDelay(100); //give servo time to move down, before draw
+	plotLineGeneral(g_curX,g_curY, 300,250);
+	plotLineGeneral(g_curX,g_curY, 300,300);
+	plotLineGeneral(g_curX,g_curY, 250,300);
+	plotLineGeneral(g_curX,g_curY, 250,250);
 
+	//plot 45deg twisted square
+	plotLineGeneral(g_curX,g_curY, 325, 325);
+	/*BUG IS SOMEWHERE AFTER THIS LINE!!!
+	 * global coord variables dont update*/
+	plotLineGeneral(g_curX,g_curY, 400, 250);
+	plotLineGeneral(g_curX,g_curY, 325, 175);
+	plotLineGeneral(g_curX,g_curY, 250, 250);
 
+	//diamond buggy!!!??? sometiems prints sometimes doesnt depedn on beginning delay before drawing???
+	plotLineGeneral(g_curX,g_curY, 300, 270);
+	plotLineGeneral(g_curX,g_curY, 350, 250);
+	plotLineGeneral(g_curX,g_curY, 300, 230);
+	plotLineGeneral(g_curX,g_curY, 250, 250);
 
+	//another diamond
+	/*this diamond works ok*/
+	plotLineGeneral(g_curX,g_curY, 240, 270);
+	plotLineGeneral(g_curX,g_curY, 230, 250);
+	plotLineGeneral(g_curX,g_curY, 240, 230);
+	plotLineGeneral(g_curX,g_curY, 250, 250);
 
+	//reset the diamond and prepare to draw square
+	plotLineGeneral(g_curX,g_curY, 240, 270);
+	plotLineGeneral(g_curX,g_curY, 230, 250);
 
+	//draw rectangle
+	plotLineGeneral(g_curX,g_curY, 230, 270);
+	plotLineGeneral(g_curX,g_curY, 350, 270);
+	plotLineGeneral(g_curX,g_curY, 350, 230);
+	plotLineGeneral(g_curX,g_curY, 230, 230);
+	plotLineGeneral(g_curX,g_curY, 230, 270);
+
+	for (;;) {
+		vTaskDelay(100);
+	}
+}
 
 
 int main(void) {
 
 	prvSetupHardware();
 	ITM_init();
-
-	/*All SCtimers must be initialized in the main before usage!!!
-	 *
-	 * */
-	//	Chip_SCT_Init(LPC_SCT0);
-	//	Chip_SCT_Init(LPC_SCT1);
-
-	/*sets up three SCtimers for three RGB colors*/
-	//	setupSCTLED();
-
-
 	Chip_RIT_Init(LPC_RITIMER);// initialize RIT (= enable clocking etc.)
+	Chip_SCT_Init(LPC_SCT0);//init SCtimer0Large
+	setupPenServo();//init servo pwm into center pos originally
 
 	// set the priority level of the interrupt
 	// The level must be equal or lower than the maximum priority specified in FreeRTOS config
@@ -1564,8 +1593,10 @@ int main(void) {
 
 	/*craete semaphores and commandqueue*/
 	sbRIT = xSemaphoreCreateBinary();
-	commandQueue = xQueueCreate(5, sizeof(CommandStruct));
+	commandQueue = xQueueCreate(20, sizeof(CommandStruct));
 	sbGo = xSemaphoreCreateBinary();
+    eventGroup = xEventGroupCreate();
+    xEventGroupSetBits( eventGroup, 0x0 );
 
 	/*use queueregistry to register semaphores and queues*/
 	vQueueAddToRegistry(commandQueue, "comQueue");
@@ -1574,29 +1605,41 @@ int main(void) {
 
 	//create binary semph
 	syncSemph = xSemaphoreCreateBinary();
-	/* usb parser  thread */
-	xTaskCreate(parse_task, "usbparse",
+
+	/* usb parser mdraw commands thread */
+	xTaskCreate(parse_task, "parse_task",
 			configMINIMAL_STACK_SIZE * 5, NULL, (tskIDLE_PRIORITY + 1UL),
 			(TaskHandle_t *) NULL);
 
+	/*NOTE!! here are algorithm test drawing tasks for plottersimulator*/
+#ifdef keijoSimulator
 	#ifdef useLoopingBresenham
-	xTaskCreate(draw_square_task, "drawsquare",
+	xTaskCreate(draw_square_task1, "drawsquare1",
 			configMINIMAL_STACK_SIZE * 4, NULL, (tskIDLE_PRIORITY + 1UL),
 			(TaskHandle_t *) NULL);
 	#endif
 
 
-#ifndef useLoopingBresenham
+	#ifndef useLoopingBresenham
 	xTaskCreate(testdraw_isr_bresenham_task, "isrtestdraw",
 			configMINIMAL_STACK_SIZE * 4, NULL, (tskIDLE_PRIORITY + 1UL),
 			(TaskHandle_t *) NULL);
 
+	#endif
 #endif
 
 
+
+
+	/*execute mdraw commands thread*/
 	xTaskCreate(execute_task, "execute_task",
 			configMINIMAL_STACK_SIZE * 4, NULL, (tskIDLE_PRIORITY + 1UL),
 			(TaskHandle_t *) NULL);
+
+	xTaskCreate(calibrate_task, "calibrate_task",
+			configMINIMAL_STACK_SIZE * 4, NULL, (tskIDLE_PRIORITY + 1UL),
+			(TaskHandle_t *) NULL);
+
 
 	/* cdc thread */
 	xTaskCreate(cdc_task, "CDC",
