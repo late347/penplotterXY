@@ -93,8 +93,8 @@ static volatile std::atomic<bool> pulseState(true);//NOTE!! THIS VARIABLE IS NEC
 
 
 //these are device current coords global variables for plottercoords
-volatile int g_curX = 250;
-volatile int g_curY = 250;
+volatile int g_curX = 10;
+volatile int g_curY = 10;
 /*global variables ends*/
 
 
@@ -995,7 +995,7 @@ void plotLineHoriz(int x0, int y0, int x1, int y1) {
 		RIT_start(2, 1000000 / (2 * ppsValue));
 		localX += xincr; //update  coords
 	}
-	g_curX=localX;
+//	g_curX=localX;
 }
 
 //special case for purely vertical moves BRESENHAM loopingBresenham
@@ -1023,7 +1023,7 @@ void plotLineVert(int x0, int y0, int x1, int y1) {
 		RIT_start(2, 1000000 / (2 * ppsValue));
 		localY += yincr;
 	}
-	g_curY=localY;
+//	g_curY=localY;
 }
 
 //BRESENHAM HELPER FUNCTION loopingBresenham
@@ -1611,22 +1611,22 @@ int main(void) {
 			configMINIMAL_STACK_SIZE * 5, NULL, (tskIDLE_PRIORITY + 1UL),
 			(TaskHandle_t *) NULL);
 
-	/*NOTE!! here are algorithm test drawing tasks for plottersimulator*/
-#ifdef keijoSimulator
-	#ifdef useLoopingBresenham
-	xTaskCreate(draw_square_task1, "drawsquare1",
-			configMINIMAL_STACK_SIZE * 4, NULL, (tskIDLE_PRIORITY + 1UL),
-			(TaskHandle_t *) NULL);
-	#endif
-
-
-	#ifndef useLoopingBresenham
-	xTaskCreate(testdraw_isr_bresenham_task, "isrtestdraw",
-			configMINIMAL_STACK_SIZE * 4, NULL, (tskIDLE_PRIORITY + 1UL),
-			(TaskHandle_t *) NULL);
-
-	#endif
-#endif
+//	/*NOTE!! here are algorithm test drawing tasks for plottersimulator*/
+//#ifdef keijoSimulator
+//	#ifdef useLoopingBresenham
+//	xTaskCreate(draw_square_task1, "drawsquare1",
+//			configMINIMAL_STACK_SIZE * 4, NULL, (tskIDLE_PRIORITY + 1UL),
+//			(TaskHandle_t *) NULL);
+//	#endif
+//
+//
+//	#ifndef useLoopingBresenham
+//	xTaskCreate(testdraw_isr_bresenham_task, "isrtestdraw",
+//			configMINIMAL_STACK_SIZE * 4, NULL, (tskIDLE_PRIORITY + 1UL),
+//			(TaskHandle_t *) NULL);
+//
+//	#endif
+//#endif
 
 
 
