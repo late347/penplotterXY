@@ -86,15 +86,15 @@ const int forLoopDelay = 1;
 //These global variables are shared usage between either case of conditional compilation Interrupt Handlers...
 volatile int m1parameter = 0;//  determine which pin is driven into which direction, straight motorMove horiz OR vert
 volatile int m2parameter = 0;//   determine which two pins are driven into which direction at the same time, diagonal motorMove
-const int ppsValue=800;	//arbitrary value for pps
+const int ppsValue=2000;	//arbitrary value for pps
 volatile uint32_t RIT_count; //NOTE!! THIS VARIABLE IS NECESSARY!
 static  std::atomic<bool> calibrationFinished(false);	//note, currently not used yet for anything important, at least...
 static volatile std::atomic<bool> pulseState(true);//NOTE!! THIS VARIABLE IS NECESSARY for rit interrupt handlers!
 
 
 //these are device current coords global variables for plottercoords
-volatile int g_curX = 10;
-volatile int g_curY = 10;
+volatile int g_curX(250);
+volatile int g_curY(250);
 /*global variables ends*/
 
 
@@ -1163,9 +1163,9 @@ void plotLineGeneral(int x0, int y0, int x1, int y1) {
 
 	endingpoint:  //label for the special case of same startpoint and same endpoint, dont do anything
 	kakka = 0; //for debug only!
-	/*UPDATE GLOBAL COORDS, ASSUME ALGORITHM WORKED AND SET CURCOORDS=ENDCOORDS
-	 * seems to work, in example test_draw_tasks */
-	g_curX=x1, g_curY=y1;
+//	/*UPDATE GLOBAL COORDS, ASSUME ALGORITHM WORKED AND SET CURCOORDS=ENDCOORDS
+//	 * seems to work, in example test_draw_tasks */
+//	g_curX=x1, g_curY=y1;
 
 }
 
@@ -1240,8 +1240,8 @@ static void execute_task(void*pvParameters) {
 		if(curcmd.commandWord == CommandStruct::G1 && curcmd.isLegal){
 
 			//assume 1 fullstep == 1.0mm,
-			float tempx = curcmd.xCoord / 100.0;
-			float tempy = curcmd.yCoord / 100.0;
+			double tempx = curcmd.xCoord / 100.0;
+			double tempy = curcmd.yCoord / 100.0;
 
 			int roundX = std::round(tempx);
 			int roundY = std::round(tempy);
@@ -1256,6 +1256,10 @@ static void execute_task(void*pvParameters) {
 #ifdef useLoopingBresenham //forlooping Bresenham
 			//forlooping bresenham updates globalcoords internally! this is desired (updates coords in loopcounting)!
 			plotLineGeneral(g_curX, g_curY, roundX,roundY);
+			/*UPDATE GLOBAL COORDS, ASSUME ALGORITHM WORKED AND SET CURCOORDS=ENDCOORDS
+			 * seems to work, in example test_draw_tasks */
+			g_curX=roundX;
+			g_curY=roundY;
 			int kakka2=0;//for debug only!
 #endif
 
@@ -1278,7 +1282,7 @@ static void parse_task(void*pvParameters) {
 	GcodeParser parser;
 	const int allocsize = 80 + 1;
 	char initialMessage[] =
-			"M10 XY 380 310 0.00 0.00 A0 B0 H0 S80 U160 D90\r\nOK\r\n";
+			"M10 XY 500 500 0.00 0.00 A0 B0 H0 S80 U160 D90\r\nOK\r\n";
 	int initlen = strlen(initialMessage);
 	char okMessage[] = "OK\r\n";
 	char badMessage[] = "nok\r\n";
@@ -1336,8 +1340,7 @@ static void parse_task(void*pvParameters) {
 
 }
 
-
-
+/*TODO::currently bugged still!!!*/
 static void calibrate_task(void*pvParameters){
 
 	int xsteps = 0;
@@ -1346,7 +1349,7 @@ static void calibrate_task(void*pvParameters){
 	int xTouches = 0;
 	int halfY;
 	int halfX;
-	float temp1,temp2;
+	double temp1,temp2;
 	bool countingY = false;
 	bool countingX = false;
 goto endpoint;
@@ -1370,7 +1373,7 @@ goto endpoint;
 	}
 
 	//drive back y axis to the center
-	temp1 = (float)ysteps/2.0;
+	temp1 = (double)ysteps/2.0;
 	halfY = std::round(temp1);
 
 
@@ -1397,7 +1400,7 @@ goto endpoint;
 	}
 	/*driveback to halfpoint x axis*/
 
-	temp2 = (float)xsteps/2.0;
+	temp2 = (double)xsteps/2.0;
 	halfX = std::round(temp2);
 
 	for (int j = 0; j < halfX; j++) {
@@ -1406,8 +1409,7 @@ goto endpoint;
 
 	endpoint:
 	vTaskDelay(1000);
-	g_curX=500;
-	g_curY=500;
+
 	/*set eventbit0 true
 	 * WAKES UP OTHER TASKS to prepare for mdraw commands*/
 	xEventGroupSetBits(eventGroup, 0x1);
@@ -1415,7 +1417,97 @@ goto endpoint;
 }
 
 
+static void real_calibrate_task(void*pvParameters){
 
+	/*mdraw calibration with plotter
+	 * 0) OTHER USER TASKS BLOCK ON EVENTGROUP
+	 * 1) create pins and pointers to them
+	 * 2) create tempParser obj to get mdraw commands
+	 * 3) get M1 commands from mdraw, to see if the thing works at all
+	 * 4) when you get M28 command from mdraw, start the calibration process
+	 * 5) determine which limitpin is connected to which node in the plotter
+	 * 6) when calibration and stepcount is finished ==> set eventgroup bit true
+	 *
+	 * allow other tasks to continue*/
+
+
+	int xsteps = 0, ysteps = 0;
+	int yTouches = 0, xTouches = 0;
+	int halfY = 0, halfX = 0;
+	double temp1 = 0, temp2 = 0;
+	bool countingY = false;
+	bool countingX = false;
+
+	goto endpoint;
+	//find y limits and count ysteps
+	while (yTouches < 2) { //count ysteps
+		if (!limitYMinP->read() && !limitYMaxP->read()) {
+			stepVert();
+			if (countingY) {
+				++ysteps;
+			}
+		} else if (limitYMinP->read() != limitYMaxP->read()) {
+			++yTouches;
+			if (ysteps == 0) {
+				countingY = true;
+			}
+			dirYP->write(!dirYP->read());
+			while (limitYMinP->read() || limitYMaxP->read()) {
+				stepVert();
+			}
+		}
+	}
+
+	//drive back y axis to the center
+	temp1 = (double) ysteps / 2.0;
+	halfY = std::round(temp1);
+
+	for (int k = 0; k < halfY; k++) {
+		stepVert();
+	}
+
+	while (xTouches < 2) { //count xsteps
+		if (!limitXMinP->read() && !limitXMaxP->read()) {
+			stepHoriz();
+			if (countingX) {
+				++xsteps;
+			}
+		} else if (limitXMinP->read() != limitXMaxP->read()) {
+			++xTouches;
+			if (xsteps == 0) {
+				countingX = true;
+			}
+			dirXP->write(!dirXP->read());
+			while (limitXMinP->read() || limitXMaxP->read()) {
+				stepHoriz();
+			}
+		}
+	}
+	/*driveback to halfpoint x axis*/
+
+	temp2 = (double) xsteps / 2.0;
+	halfX = std::round(temp2);
+
+	for (int j = 0; j < halfX; j++) {
+		stepHoriz();
+	}
+
+	endpoint: vTaskDelay(1000);
+
+	/*set eventbit0 true
+	 * WAKES UP OTHER TASKS to prepare for mdraw commands*/
+	xEventGroupSetBits(eventGroup, 0x1);
+	vTaskSuspend( NULL);
+
+}
+
+
+
+
+
+
+
+/*here are testing tasks for bresenham plotting, to verify the algorithm*/
 static void testdraw_isr_bresenham_task(void*pvParameters){
 	vTaskDelay(500);
 	setPenValue(90);
@@ -1476,12 +1568,6 @@ static void testdraw_isr_bresenham_task(void*pvParameters){
 
 
 }
-
-
-
-
-
-
 
 static void draw_square_task(void*pvParameters) {
 
