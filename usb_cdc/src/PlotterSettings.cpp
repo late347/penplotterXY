@@ -109,24 +109,24 @@ void PlotterSettings::setLimitPointers(DigitalIoPin *L1, DigitalIoPin *L2, Digit
 std::string PlotterSettings::getM11LimitResponseMessage(){
 	if (limit4p != NULL && limit3p != NULL && limit2p != NULL && limit1p != NULL) {
 		std::string response("M11");
-		if ( !limit4p->read() )
+		if ( limit4p->read() ) //if limit is true => implies limitIsNotDepressed == open switch
 			response += " 1";
 		else
 			response += " 0";
 
 
-		if (!limit4p->read())
+		if (limit4p->read())
 			response += " 1";
 		else
 			response += " 0";
 
 
-		if (!limit2p->read())
+		if (limit2p->read())
 			response += " 1 ";
 		else
 			response += " 0 ";
 
-		if (!limit1p->read())
+		if (limit1p->read())
 			response += "1\r\n";
 		else
 			response += "0\r\n";

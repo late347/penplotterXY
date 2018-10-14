@@ -140,10 +140,10 @@ void RIT_IRQHandler(void){ //THIS VERSION IS FOR RITinterruptBresenham
 	Chip_RIT_ClearIntStatus(LPC_RITIMER);// clear IRQ flag
 
 	static bool expectm2 = false; //boolean keeps track of halfpulsing for m2pinwrite in the same ISR round as the m1pinwrite
+	 //should never be nullpointers when starting ritstart
 
-	if (limitYMinP != NULL && limitYMaxP != NULL && limitXMaxP != NULL && limitXMinP != NULL) { //should never be nullpointers when starting ritstart
-
-		bool isOK = ( !limitYMinP->read() && !limitYMaxP->read() && !limitXMaxP->read() && !limitXMinP->read() ); //check limits status inside ISR
+		/*WHEN LIMIT READS TRUE => LIMIT SHOUILD BE OPEN I.E. NOT-DEPRESSED BUTTON*/
+		bool isOK = ( limitYMinP->read() && limitYMaxP->read() && limitXMaxP->read() && limitXMinP->read() ); //check limits status inside ISR
 
 		if (RIT_count > 0) { //regular case, "iterate bresenham algorithm" inside interrupt handler
 
@@ -212,9 +212,7 @@ void RIT_IRQHandler(void){ //THIS VERSION IS FOR RITinterruptBresenham
 		}
 		// End the ISR and (possibly) do a context switch
 		portEND_SWITCHING_ISR(xHigherPriorityWoken);
-	}else{
-		//do nothing the limitpointers are null// SHOULD NOT HAPPEN!!!
-	}
+
 
 
 }
@@ -239,7 +237,7 @@ void RIT_IRQHandler(void) {
 		if (RIT_count > 0) {
 			RIT_count--;
 			// do something useful here...
-			bool isOK = (  !limitYMinP->read() && !limitYMaxP->read() && !limitXMaxP->read() && !limitXMinP->read()  );
+			bool isOK = (  limitYMinP->read() && limitYMaxP->read() && limitXMaxP->read() && limitXMinP->read()  );
 
 			if (isOK) {
 				if(executeM1orM2==1) { //execute M1 pattern move
@@ -1280,11 +1278,8 @@ static void parse_task(void*pvParameters) {
 		if (enterInd != std::string::npos) {
 			gcode = cppstring.substr(0, enterInd); //found entersign, get one line of gcode
 			cppstring.erase(0, enterInd + 1);//erase the gotten gcodeline, from the cppstring front portion, BECAUSE WE PROCESSED IT ALREADY ==>sent to parser
-			ITM_write(gcode.c_str());
-			ITM_write("\r\n");
-			//vTaskDelay(20);
-			CommandStruct cmd;
-			cmd = parser.parseCommand(gcode);//send the gcode string into the parser
+
+			CommandStruct cmd = parser.parseCommand(gcode);//send the gcode string into the parser
 
 			if (cmd.commandWord == CommandStruct::M10 && cmd.isLegal) {
 				USB_send((uint8_t*) initialMessage, initlen);
@@ -1384,10 +1379,10 @@ goto endpoint;
 
 
 static void real_calibrate_task(void*pvParameters){
-	//NOTE! this calibration task starts first and initializes pins, assigns pointers
-	//and also calibrates steppermotors,
-	//NOTE! moving commands from mDraw will be disabled/ignored during calibration phase
-	//ONLY pencilServo commands and plotArea changes are allowed during calibration phase
+	/*NOTE! this calibration task starts first and initializes pins, assigns pointers
+	 * and also calibrates steppermotors,
+	 * NOTE! moving commands from mDraw will be disabled/ignored during calibration phase
+	 * ONLY pencilServo commands and plotArea changes are allowed during calibration phase*/
 
 	/*Allowable commands from mDraw at this point during calibration are as follows:
 	 * M1 pencilServo
@@ -1414,10 +1409,10 @@ static void real_calibrate_task(void*pvParameters){
 	DigitalIoPin stepY(0, 24, DigitalIoPin::output, true);
 	DigitalIoPin stepX(0, 27, DigitalIoPin::output, true);
 
-	DigitalIoPin limitYMin(1, 3, DigitalIoPin::pullup, true);
-	DigitalIoPin limitYMax(0, 0, DigitalIoPin::pullup, true);
-	DigitalIoPin limitXMax(0, 9, DigitalIoPin::pullup, true);
-	DigitalIoPin limitXMin(0, 29, DigitalIoPin::pullup, true);
+	DigitalIoPin limitYMin(1, 3, DigitalIoPin::pullup, false);
+	DigitalIoPin limitYMax(0, 0, DigitalIoPin::pullup, false);
+	DigitalIoPin limitXMax(0, 9, DigitalIoPin::pullup, false);
+	DigitalIoPin limitXMin(0, 29, DigitalIoPin::pullup, false);
 
 	//assign global pointers, tentatively... NOTE! they may change during calibration!
 	limitYMinP = &limitYMin;
@@ -1432,8 +1427,9 @@ static void real_calibrate_task(void*pvParameters){
 	dirYP = &dirY;
 	penP = &pen;
 
-	//assign limitpointers into the PlotterSettings global obj, so they're no longer nullpointers
-	//NOTE! remember to swap the pointers inside PlotterSettings, if the calibration phase  indicates that limitpins were swapped
+	/*assign limitpointers into the PlotterSettings global obj, so they're no longer nullpointers
+	 * NOTE! remember to swap the pointers inside PlotterSettings,
+	 * if the calibration phase  indicates that limitpins were swapped*/
 	savedplottersettings.setLimitPointers(limitYMaxP, limitYMinP, limitXMaxP, limitXMinP);
 
 	GcodeParser calibrationParser; 		//should  allow ONLY configuration commands and savesettings commands and pencilservo commands from mDraw during calibrationphase
@@ -1442,7 +1438,12 @@ static void real_calibrate_task(void*pvParameters){
 	int halfY = 0, halfX = 0;           //half axis steps
 	double temp1 = 0, temp2 = 0;        //temp floating point variables to calculate something...
 	std::atomic<bool> countingY(false), countingX(false);  //booleans to trigger counting on/off
-	std::atomic<bool> limit1detected(false), limit2detected(false), limit3detected(false), limit4detected(false);
+
+	std::atomic<bool>   limit1detected(false),
+						limit2detected(false),
+						limit3detected(false),
+						limit4detected(false),
+						isCalibratingServo(true);
 
 	const int allocsize = 80 + 1;
 	char badMessage[] = "ILLEGAL_command_during_calibration!\r\n";
@@ -1451,6 +1452,8 @@ static void real_calibrate_task(void*pvParameters){
 	const int oklen = strlen(okMessage);
 	char stepperCalibrationBegins[] = "M28received_steppercalibration_begins_now\r\n";
 	const int calibrationLength = strlen(stepperCalibrationBegins);
+	char calibrationError[] = "CALIBRATION ERROR! MULTIPLE LIMITS TRIGGERED!\r\n";
+	const int calibrationErrorLen = strlen(calibrationError);
 	std::string cppstring;
 	std::string gcode;
 
@@ -1470,11 +1473,11 @@ static void real_calibrate_task(void*pvParameters){
 	 * Then, you wait until calibration finishes, and then you set EventGroupBit true
 	 *  to allow other tasks to do work*/
 
-	while (1) {
+	while (isCalibratingServo) {
 
 		char str[allocsize] { 0 }; //str buffer is allocated
 		uint32_t len = USB_receive((uint8_t *) str, allocsize - 1);
-		str[len] = 0; /* make sure we have a zero at the end so that we can print the data */
+		str[len] = 0; // make sure we have a zero at the end so that we can print the data
 		cppstring += std::string(str); //append strbuffer into the "oldcppstring"
 		auto enterInd = cppstring.find('\n', 0); //find enterIndex
 
@@ -1484,7 +1487,7 @@ static void real_calibrate_task(void*pvParameters){
 			cppstring.erase(0, enterInd + 1);//erase the gotten gcodeline, from the cppstring front portion, BECAUSE WE PROCESSED IT ALREADY ==>sent to parser
 			CommandStruct calibrationcmd = calibrationParser.parseCommand(gcode);//send the gcode string into the parser
 
-			/*deal with M10, get response to settings and send it to mdraw*/
+			/*deal with M10, get response to settings and send it to mdraw*/ /*NOTE!SEEMS TO WORK WHEN DEBUGGING! :)*/
 			if (calibrationcmd.commandWord == CommandStruct::M10 && calibrationcmd.isLegal) {
 				std::string M10responsemessage = savedplottersettings.getM10ResponseMessage(); //responds to M10message properly, with formated reply
 				USB_send((uint8_t*) M10responsemessage.c_str(), strlen(M10responsemessage.c_str()));
@@ -1495,100 +1498,91 @@ static void real_calibrate_task(void*pvParameters){
 				savedplottersettings.setPenDown(calibrationcmd.penDown);
 				USB_send((uint8_t*) okMessage, oklen);
 			}
-			/*deal with M1, movepencil*/
+			/*deal with M1, movepencil*/ /*NOTE! SEEMS TO WORK WHEN DEBUGGING! :)*/
 			else if (calibrationcmd.commandWord == CommandStruct::M1 && calibrationcmd.isLegal ){
 				setPenValue(calibrationcmd.commandNumber); // move the pencilServo
 				vTaskDelay(100); //small delay to allow pencilservo time to settle
 				USB_send((uint8_t*) okMessage, oklen);
 			}
-			/*deal with M5, updatevalues*/
+			/*deal with M5, updatevalues*/ /*NOTE! SEEMS TO WORK WHEN DEBUGGING! :)*/
 			else if(calibrationcmd.commandWord == CommandStruct::M5 && calibrationcmd.isLegal){
 				savedplottersettings.updateM5Values(calibrationcmd);
 				USB_send((uint8_t*) okMessage, oklen);
 			}
-			/*deal with M11 limitquery, get response and send it to mdraw*/
+			/*deal with M11 limitquery, get response and send it to mdraw*/ /*NOTE! SEEMS TO WORK WHEN DEBUGGING! :)*/
 			else if (calibrationcmd.commandWord == CommandStruct::M11 && calibrationcmd.isLegal){
 				std::string M11responsemessage = savedplottersettings.getM11LimitResponseMessage();
 				USB_send((uint8_t*) M11responsemessage.c_str(), strlen(M11responsemessage.c_str()));
 			}
 
-			/*deal with M28 start steppercalibration message*/
+			/*deal with M28 start steppercalibration message*/ /*NOTE! SEEMS TO WORK WHEN DEBUGGING! :)*/
 			else if(calibrationcmd.commandWord == CommandStruct::M28 && calibrationcmd.isLegal){
 				USB_send((uint8_t*) stepperCalibrationBegins, calibrationLength);
-				break; //BREAKS FROM LOOP, start calibrations
+				isCalibratingServo = false; //BREAKS FROM LOOP, start calibrations
 			}
-			/*deal with illegal commands during calibration phase*/
+			/*deal with illegal commands during calibration phase*/ /*NOTE! SEEMS TO WORK WHEN DEBUGGING! :)*/
 			else {
 				USB_send((uint8_t*) badMessage, badLength);
 			}
 			memset(str, 0, allocsize);
 			gcode = "";
 		}
-
-
-		//else, YOU DIDNT FIND COMPLETE GCODE, WAIT FOR MORE STRBUFFER APPENDED CHARS!
-
 	}
 
 
 
 
-
-//	//set dirs so that you move outwards from origin
-//	dirX.write(false);
+//TODO::FINISH CALIBRATION TASK FOR STEPCOUNTING AND DEBUG IN PLOTTERSIMULATOR!!
+//
+//	dirX.write(false);//set dirs so that you move outwards from origin
 //	dirY.write(false);
 //
-//
-//
-//
-//	//find y limits and count ysteps
-//	//NOTE! expect to find out which limit is connected to limitYMAX first
+//	/*find y limits and count ysteps
+//	 * NOTE! expect to find out which limit is connected to limitYMAX FIRST*/
 //	while (yTouches < 2) { //count ysteps based on the touchCounts at the limits
 //
-//		limit1detected = limitYMax.read();
+//		limit1detected = limitYMax.read();//if limit read true => not contacting limit
 //		limit2detected = limitYMin.read();
 //		limit3detected = limitXMax.read();
 //		limit4detected = limitXMin.read();
 //
-//		if ( !limit1detected && !limit2detected && !limit3detected && !limit4detected) { //no limit detected, keep moving outwards
+//		if ( limit1detected && limit2detected && limit3detected && limit4detected) { //no limit detected, keep moving outwards
 //			stepVert();
 //			if (countingY) { //if counting,then count...
 //				++ysteps;
 //			}
-//			/*check if only single limitDetected, otherwise calibration got fucked up*/
-//		} else if (  (limit1detected && !limit2detected && !limit3detected && !limit4detected) ||
-//					(!limit1detected && limit2detected && !limit3detected && !limit4detected) ||
-//					(!limit1detected && !limit2detected && limit3detected && !limit4detected) ||
-//					(!limit1detected && !limit2detected && !limit3detected && limit4detected)
+//			/*check if only single limitDetected, otherwise calibration got entirely fucked up*/
+//		} else if (  (!limit1detected && limit2detected && limit3detected && limit4detected) ||
+//					(limit1detected && !limit2detected && limit3detected && limit4detected) ||
+//					(limit1detected && limit2detected && !limit3detected && limit4detected) ||
+//					(limit1detected && limit2detected && limit3detected && !limit4detected)
 //					) {
-//			if(limit1detected){
+//			if(!limit1detected){
 //				int kakka1=0; //do nothing Ymax==Ymax, kakka is only for debugging purposes!
-//			}else if (limit2detected){
+//			}else if (!limit2detected){
 //				swapDigitalIoPins(&limitYMax, &limitYMin);//Ymin encountered, Ymax expected, swap them
 //				limitYMaxP = &limitYMax; //update globalpointers
 //				limitYMinP = &limitYMin;
-//			}else if(limit3detected){
+//			}else if(!limit3detected){
 //				swapDigitalIoPins(&limitYMax, &limitXMax); //Xmax encountered, Ymax expected, swap them
 //				limitYMaxP = &limitYMax;//update globalpointers
 //				limitXMaxP = &limitXMax;
-//			}else if(limit4detected){
+//			}else if(!limit4detected){
 //				swapDigitalIoPins(&limitYMax, &limitXMin);//Xmin encountered, Ymax expected, swap them
 //				limitYMaxP = &limitYMax;
 //				limitXMinP = &limitXMin;
 //			}
-//
-//
-//
 //
 //			++yTouches;
 //			if (ysteps == 0) {
 //				countingY = true;
 //			}
 //			dirYP->write(!dirYP->read());
-//			while (limitYMinP->read() || limitYMaxP->read()) {
+//			while ( !limitYMax.read() || !limitYMin.read() || !limitXMax.read() || !limitXMin.read()  ) { //if any limitSwitchISClosed, move away from the direction until all are open
 //				stepVert();
 //			}
-//		}else{ //multiple limits triggered at the same time! illegal situation!!!
+//		}else{ //multiple limits triggered at same time, CALIBRATION ERROR! CRITICAL ERROR!!! stay in foreverloop!!!
+//			USB_send((uint8_t*) calibrationError, calibrationErrorLen); //notify mDraw of critical error
 //			while (1) {
 //				stepX.write(false);
 //				stepY.write(false);
