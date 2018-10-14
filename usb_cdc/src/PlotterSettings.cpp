@@ -84,11 +84,9 @@ void PlotterSettings::setYMotorDir(bool isclockwise){
 }
 
 
-void PlotterSettings::updateValues(CommandStruct &cmd){
+void PlotterSettings::updateM5Values(CommandStruct &cmd){
 
 	if (cmd.commandWord == CommandStruct::M5 && cmd.isLegal) {
-		penUp = cmd.penUp; //saved values in memory for pencilservo, affect M10command responsemessage
-		penDown = cmd.penDown;
 
 		xMotorClockwise = cmd.xMotorClockwise; //by default should be true, so that motordirs are correct way setup (false xDirPin == right == increasingX == mDrawclockwise)
 		yMotorClockwise = cmd.yMotorClockwise; //by default should be true, so that  (false yDirPin == up == increasingY == mDrawclockwise)
@@ -111,25 +109,27 @@ void PlotterSettings::setLimitPointers(DigitalIoPin *L1, DigitalIoPin *L2, Digit
 std::string PlotterSettings::getM11LimitResponseMessage(){
 	if (limit4p != NULL && limit3p != NULL && limit2p != NULL && limit1p != NULL) {
 		std::string response("M11");
-		if (limit4p->read())
-			response += " 0";
-		else
+		if ( !limit4p->read() )
 			response += " 1";
-
-		if (limit4p->read())
+		else
 			response += " 0";
-		else
-			response += " 1";
 
-		if (limit2p->read())
-			response += " 0 ";
+
+		if (!limit4p->read())
+			response += " 1";
 		else
+			response += " 0";
+
+
+		if (!limit2p->read())
 			response += " 1 ";
-
-		if (limit1p->read())
-			response += "0\r\n";
 		else
+			response += " 0 ";
+
+		if (!limit1p->read())
 			response += "1\r\n";
+		else
+			response += "0\r\n";
 
 		response += "OK\r\n";
 

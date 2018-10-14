@@ -29,6 +29,19 @@ CommandStruct GcodeParser::parseCommand(const std::string & rawInput) {
 		isLegal = parseG1(cmd);
 	}
 	
+	if(!isLegal){
+		isLegal = parseM28(cmd);
+	}
+	if(!isLegal){
+		isLegal = parseM2(cmd);
+	}
+	if(!isLegal){
+		isLegal = parseM5(cmd);
+	}
+	if(!isLegal){
+		isLegal = parseM11(cmd);
+	}
+
 	(this->clearTokens());
 	return cmd;
 }
@@ -357,6 +370,20 @@ bool GcodeParser::parseM2(CommandStruct &cmdRef){
 
 
 	return false;
+}
+
+bool GcodeParser::parseM28(CommandStruct &cmdRef){
+	auto size = tokensVec.size();
+	if (size != 1)
+		return false;
+	if(tokensVec[0] == "M28"){
+		cmdRef.commandWord = CommandStruct::M28;
+		cmdRef.isLegal = true;
+		return true;
+	}
+	else{
+		return false;
+	}
 }
 
 

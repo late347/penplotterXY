@@ -75,7 +75,7 @@ public:
 	void setWidth(int);
 	void setSpeed(int);
 
-	void updateValues(CommandStruct &);
+	void updateM5Values(CommandStruct &);
 	void setLimitPointers(DigitalIoPin*, DigitalIoPin*, DigitalIoPin*, DigitalIoPin*);
 
 	std::string getM10ResponseMessage(); // M10command responsemessage based on saved plottersettings
