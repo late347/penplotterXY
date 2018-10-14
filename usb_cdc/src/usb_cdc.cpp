@@ -1770,19 +1770,20 @@ static void draw_square_task1(void*pvParameters) {
 	//plot 45deg twisted square
 	plotLineGeneral(g_curX,g_curY, 325, 325);
 	/*BUG IS SOMEWHERE AFTER THIS LINE!!!
-	 * global coord variables dont update*/
+	 * global coord variables dont update EDITED::BUG FIxed sort of... currently all g_curX and g_curY update
+	 * after complete line plot (never one by one increment in a loop)*/
 	plotLineGeneral(g_curX,g_curY, 400, 250);
 	plotLineGeneral(g_curX,g_curY, 325, 175);
 	plotLineGeneral(g_curX,g_curY, 250, 250);
 
-	//diamond buggy!!!??? sometiems prints sometimes doesnt depedn on beginning delay before drawing???
+	//diamond
 	plotLineGeneral(g_curX,g_curY, 300, 270);
 	plotLineGeneral(g_curX,g_curY, 350, 250);
 	plotLineGeneral(g_curX,g_curY, 300, 230);
 	plotLineGeneral(g_curX,g_curY, 250, 250);
 
 	//another diamond
-	/*this diamond works ok*/
+	/* works ok*/
 	plotLineGeneral(g_curX,g_curY, 240, 270);
 	plotLineGeneral(g_curX,g_curY, 230, 250);
 	plotLineGeneral(g_curX,g_curY, 240, 230);
