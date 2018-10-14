@@ -7,6 +7,7 @@ CPP_SRCS += \
 ../src/DigitalIoPin.cpp \
 ../src/Fmutex.cpp \
 ../src/GcodeParser.cpp \
+../src/PlotterSettings.cpp \
 ../src/cr_cpp_config.cpp \
 ../src/cr_startup_lpc15xx.cpp \
 ../src/usb_cdc.cpp 
@@ -24,6 +25,7 @@ OBJS += \
 ./src/Fmutex.o \
 ./src/GcodeParser.o \
 ./src/ITM_write.o \
+./src/PlotterSettings.o \
 ./src/cdc_desc.o \
 ./src/cdc_main.o \
 ./src/cdc_vcom.o \
@@ -37,6 +39,7 @@ CPP_DEPS += \
 ./src/DigitalIoPin.d \
 ./src/Fmutex.d \
 ./src/GcodeParser.d \
+./src/PlotterSettings.d \
 ./src/cr_cpp_config.d \
 ./src/cr_startup_lpc15xx.d \
 ./src/usb_cdc.d 

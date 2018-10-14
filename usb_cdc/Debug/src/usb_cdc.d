@@ -69,7 +69,10 @@ src/usb_cdc.o src/usb_cdc.d: ../src/usb_cdc.cpp \
  C:\Users\Lauri\Documents\MCUXpressoIDE_10.2.1_795\workspace\GcodePlotterNEWESTWorkspace\FreeRTOS\src\include/timers.h \
  C:\Users\Lauri\Documents\MCUXpressoIDE_10.2.1_795\workspace\GcodePlotterNEWESTWorkspace\FreeRTOS\src\include/task.h \
  C:\Users\Lauri\Documents\MCUXpressoIDE_10.2.1_795\workspace\GcodePlotterNEWESTWorkspace\usb_cdc\inc/GcodeParser.h \
- C:\Users\Lauri\Documents\MCUXpressoIDE_10.2.1_795\workspace\GcodePlotterNEWESTWorkspace\usb_cdc\inc/CommandStruct.h
+ C:\Users\Lauri\Documents\MCUXpressoIDE_10.2.1_795\workspace\GcodePlotterNEWESTWorkspace\usb_cdc\inc/CommandStruct.h \
+ C:\Users\Lauri\Documents\MCUXpressoIDE_10.2.1_795\workspace\GcodePlotterNEWESTWorkspace\usb_cdc\inc/PlotterSettings.h \
+ C:\Users\Lauri\Documents\MCUXpressoIDE_10.2.1_795\workspace\GcodePlotterNEWESTWorkspace\usb_cdc\inc/DigitalIoPin.h \
+ C:\Users\Lauri\Documents\MCUXpressoIDE_10.2.1_795\workspace\GcodePlotterNEWESTWorkspace\usb_cdc\inc/PlotterSettings.h
 
 C:\Users\Lauri\Documents\MCUXpressoIDE_10.2.1_795\workspace\GcodePlotterNEWESTWorkspace\lpc_board_nxp_lpcxpresso_1549\inc/board.h:
 
@@ -212,3 +215,9 @@ C:\Users\Lauri\Documents\MCUXpressoIDE_10.2.1_795\workspace\GcodePlotterNEWESTWo
 C:\Users\Lauri\Documents\MCUXpressoIDE_10.2.1_795\workspace\GcodePlotterNEWESTWorkspace\usb_cdc\inc/GcodeParser.h:
 
 C:\Users\Lauri\Documents\MCUXpressoIDE_10.2.1_795\workspace\GcodePlotterNEWESTWorkspace\usb_cdc\inc/CommandStruct.h:
+
+C:\Users\Lauri\Documents\MCUXpressoIDE_10.2.1_795\workspace\GcodePlotterNEWESTWorkspace\usb_cdc\inc/PlotterSettings.h:
+
+C:\Users\Lauri\Documents\MCUXpressoIDE_10.2.1_795\workspace\GcodePlotterNEWESTWorkspace\usb_cdc\inc/DigitalIoPin.h:
+
+C:\Users\Lauri\Documents\MCUXpressoIDE_10.2.1_795\workspace\GcodePlotterNEWESTWorkspace\usb_cdc\inc/PlotterSettings.h:

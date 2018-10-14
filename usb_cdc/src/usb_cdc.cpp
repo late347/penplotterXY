@@ -39,6 +39,7 @@
 // User-defined classes, structs and includes
 #include "GcodeParser.h"
 #include "CommandStruct.h"
+#include "PlotterSettings.h"
 //user defined includes ends
 
 
@@ -83,6 +84,7 @@ decidem1parameters, getOctant, and SwapAxes were based on the journal article re
 volatile std::atomic<int> executeM1orM2(0); //check 1 or 2 inside isr to decide USED FOR loopingBresenham versio
 const int forLoopDelay = 1;
 
+
 //These global variables are shared usage between either case of conditional compilation Interrupt Handlers...
 volatile int m1parameter = 0;//  determine which pin is driven into which direction, straight motorMove horiz OR vert
 volatile int m2parameter = 0;//   determine which two pins are driven into which direction at the same time, diagonal motorMove
@@ -91,6 +93,9 @@ volatile uint32_t RIT_count; //NOTE!! THIS VARIABLE IS NECESSARY!
 static  std::atomic<bool> calibrationFinished(false);	//note, currently not used yet for anything important, at least...
 static volatile std::atomic<bool> pulseState(true);//NOTE!! THIS VARIABLE IS NECESSARY for rit interrupt handlers!
 
+
+
+PlotterSettings savedplottersettings; //global object keeps track of saveable and saved mDraw settings
 
 //these are device current coords global variables for plottercoords
 volatile int g_curX(250);
@@ -1224,13 +1229,13 @@ static void execute_task(void*pvParameters) {
 	dirYP = &dirY;
 	penP = &pen;
 
-	CommandStruct curcmd{CommandStruct::M1, 0, true, 0, 0};
+	CommandStruct curcmd;
 
 	vTaskDelay(50);
 
 	//wait until calibration task finishes!
-	/*TODO:: add something in calibration mode to get the currentlocation in coords*/
-	/*TODO:: CALIBRATION TASK IS BUGGED!!! LIMIT PINS DONT WORK PROPERLY IN KEIJOSIMULATOR*/
+	/*TODO:: add something in calibration mode to get the currentlocation in coords
+	 * TODO:: make calibration task!!!*/
 
 	xEventGroupWaitBits(eventGroup, 0x1, pdFALSE, pdFALSE, portMAX_DELAY);
 
@@ -1282,14 +1287,13 @@ static void parse_task(void*pvParameters) {
 	GcodeParser parser;
 	const int allocsize = 80 + 1;
 	char initialMessage[] =
-			"M10 XY 500 500 0.00 0.00 A0 B0 H0 S80 U160 D90\r\nOK\r\n";
+			"M10 XY 380 310 0.00 0.00 A0 B0 H0 S80 U160 D90\r\nOK\r\n";
 	int initlen = strlen(initialMessage);
 	char okMessage[] = "OK\r\n";
 	char badMessage[] = "nok\r\n";
 	int oklen = strlen(okMessage);
-	std::string temp = "";
-	std::string cppstring = "";
-	std::string gcode = "";
+	std::string cppstring;
+	std::string gcode;
 
 	//small initial delay
 	vTaskDelay(75);
@@ -1311,18 +1315,12 @@ static void parse_task(void*pvParameters) {
 			ITM_write(gcode.c_str());
 			ITM_write("\r\n");
 			//vTaskDelay(20);
-			CommandStruct cmd {
-				CommandStruct::M1,
-				-2147483648,
-				false,
-				-2147483648,
-				-2147483648
-			};
+			CommandStruct cmd;
 			cmd = parser.parseCommand(gcode);//send the gcode string into the parser
 
 			if (cmd.commandWord == CommandStruct::M10 && cmd.isLegal) {
 				USB_send((uint8_t*) initialMessage, initlen);
-			} else if (cmd.isLegal) {
+			} else if (cmd.isLegal && cmd.commandWord != CommandStruct::uninitialized) {
 				//any legal message send ok, but also send command to queue
 				xQueueSendToBack(commandQueue, &cmd, portMAX_DELAY);
 				USB_send((uint8_t*) okMessage, oklen);
@@ -1340,7 +1338,7 @@ static void parse_task(void*pvParameters) {
 
 }
 
-/*TODO::currently bugged still!!!*/
+/*TODO:: make calibration task!!!*/
 static void calibrate_task(void*pvParameters){
 
 	int xsteps = 0;
@@ -1430,15 +1428,13 @@ static void real_calibrate_task(void*pvParameters){
 	 *
 	 * allow other tasks to continue*/
 
-
+	GcodeParser calibrationParser;
 	int xsteps = 0, ysteps = 0;
 	int yTouches = 0, xTouches = 0;
 	int halfY = 0, halfX = 0;
 	double temp1 = 0, temp2 = 0;
-	bool countingY = false;
-	bool countingX = false;
+	bool countingY = false, countingX = false;
 
-	goto endpoint;
 	//find y limits and count ysteps
 	while (yTouches < 2) { //count ysteps
 		if (!limitYMinP->read() && !limitYMaxP->read()) {
@@ -1492,7 +1488,8 @@ static void real_calibrate_task(void*pvParameters){
 		stepHoriz();
 	}
 
-	endpoint: vTaskDelay(1000);
+
+	vTaskDelay(1000);
 
 	/*set eventbit0 true
 	 * WAKES UP OTHER TASKS to prepare for mdraw commands*/
@@ -1713,9 +1710,6 @@ int main(void) {
 //
 //	#endif
 //#endif
-
-
-
 
 	/*execute mdraw commands thread*/
 	xTaskCreate(execute_task, "execute_task",

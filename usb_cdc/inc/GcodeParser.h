@@ -2,13 +2,14 @@
 #include <vector>
 #include <string>
 #include "CommandStruct.h"
-
+#include "PlotterSettings.h"
 
 //DONT SAY USING NAMESPACE STD; IN HEADERFILES
 class GcodeParser {
 public:
 	//functions
 	GcodeParser(){} //10 spaces in vector for words in the beginning EDITED::should create allocatin for 10 emptoes??
+	GcodeParser(DigitalIoPin*);
 	virtual ~GcodeParser();
 
 	/*parseCommand is the main parser function, which uses other helper functions inside it
@@ -30,7 +31,13 @@ public:
 	bool assertNotLeadingZero(const char &letter);
 	bool parseM4(CommandStruct &cmdRef);
 	bool parseM1(CommandStruct &cmdRef);
-    bool tokenize_input_refactored(const std::string & rawInput);
+
+	bool parseM5(CommandStruct &cmdRef);
+	bool parseM11(CommandStruct &cmdRef);
+	bool parseM2(CommandStruct &cmdRef);
+	bool parseM28(CommandStruct &cmdRef);
+
+    bool tokenize_input_refactored(const std::string & rawInput); //refactored, not currenntly used version of tokenizeInput
 	int getCoordsFromG1Parameter( const bool &isPositive, const std::string &coordsRef, const char &axisChar);
 	
 	
@@ -40,14 +47,13 @@ public:
 	/*clear tokens from vec, in preparation for new inputRound*/
 	void clearTokens() { tokensVec.clear(); }
 
-	//public vector datamember, for easy access???!!!
-	std::vector<std::string> tokensVec;
+	//public datamembers
+	std::vector<std::string> tokensVec; //public vector datamember, for easy access for debugging???!!!
 
 protected:
-	//datamembers
 
-	/*internal constant for parsing purposes*/
-	const int maxCharAmount = 30;
+	//protected datamembers
+	const int maxCharAmount = 30; //max amount of chars per legal command in mDraw
 	const char delimiter = ' ';//delimit for tokenizing
 };
 

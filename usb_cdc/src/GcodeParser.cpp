@@ -9,7 +9,8 @@ GcodeParser::~GcodeParser() {
 
 CommandStruct GcodeParser::parseCommand(const std::string & rawInput) {
 	//create temp struct and return it by value in the end after parsing is done
-	CommandStruct cmd{ CommandStruct::M1, -2147483648, false, -2147483648, -2147483648 };
+
+	CommandStruct cmd; //initialize as illegal command, and hope to be able to parse it into a legal command!
 
 	
 	bool isLegal = false;
@@ -246,6 +247,119 @@ bool GcodeParser::parseM1(CommandStruct & cmdRef) {
 
 	return false;
 }
+
+
+
+
+bool GcodeParser::parseM5(CommandStruct &cmdRef){
+
+	auto size = tokensVec.size();
+	int height;
+	int width;
+	int speed;
+	bool xclockwise, yclockwise;
+	if(size != 6)
+		return false;
+
+	if(tokensVec[0] == "M5"){
+		if(tokensVec[1]== "A0" || tokensVec[1]=="A1"){
+//			xclockwise = (tokensVec[1] == "A0") ? true : false; //force mDraw direction to be clockwise always
+			xclockwise = true;
+			if(tokensVec[2]=="B0" ||tokensVec[2]=="B1"){
+//				yclockwise = (tokensVec[2] == "B0") ? true : false; //force mDraw direction to be clockwise always
+				yclockwise = true;
+				std::string h = tokensVec[3];
+				auto hres = sscanf(h.c_str(), "H%d", &height); //get height parameter
+				if(hres==1){
+					std::string w = tokensVec[4];
+					auto wres = sscanf(w.c_str(), "W%d", &width); //get width parameter
+					if(wres==1){
+						std::string s = tokensVec[5];
+						auto sres = sscanf(s.c_str(), "S%d", &speed); //get speed parameter
+						if(sres==1){
+							//command was legal ==> implies update the plottersettings and return true
+							//but, first check that all parameters were legal values, legal height, width, and percentage
+							bool allParametersLegal = (height >= 1 ) && ( width >= 1) &&  ( speed >= 0 && speed <= 100);
+
+							if(allParametersLegal){
+
+								/*notify program with returnvalues in the struct that legal command was identified and processed
+								 * LATER, PlotterSettings object will get this struct as parameter for new values to update itself.*/
+								cmdRef.commandWord = CommandStruct::M5;
+								cmdRef.isLegal = true;
+								cmdRef.xMotorClockwise = xclockwise;
+								cmdRef.yMotorClockwise = yclockwise;
+								cmdRef.height = height;
+								cmdRef.width = width;
+								cmdRef.speed = speed;
+
+								return true;
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+	return false;
+
+
+}
+
+bool GcodeParser::parseM11(CommandStruct &cmdRef){
+	auto size = tokensVec.size();
+	if(size != 1)
+		return false;
+
+	if(tokensVec[0] == "M11"){
+		cmdRef.commandWord = CommandStruct::M11;
+		cmdRef.isLegal = true;
+		return true;
+	}
+	else
+		return false;
+}
+
+bool GcodeParser::parseM2(CommandStruct &cmdRef){
+	auto size = tokensVec.size();
+	int upParam = -1;
+	int downParam = -1;
+	if(size != 3){
+		return false;
+	}
+
+	if(tokensVec[0] == "M2"){
+		std::string  upstr(tokensVec[1]);
+		auto upRes = sscanf(upstr.c_str(), "U%d", &upParam);
+		if(upRes == 1){
+			std::string downstr(tokensVec[2]);
+			auto downRes = sscanf(downstr.c_str(), "D%d", &downParam);
+			if(downRes == 1){
+				/*NOTE!! dont allow upParam to be smaller in size compared to downParam!
+				 * otherwise everything gets fucked, hopefully even mDraw takes this into account...*/
+				bool paramsLegal =
+						(downParam >= 0 && downParam <= 255)  &&
+						(upParam >= 0 && upParam <= 255) &&
+						(upParam > downParam);
+
+				if(paramsLegal){
+					/*modify the commandstruct to later allow the struct to be passed into
+					 *  PlotterSettings updating function*/
+					cmdRef.penUp = upParam;
+					cmdRef.penDown = downParam;
+					cmdRef.commandWord = CommandStruct::M2;
+					cmdRef.isLegal = true;
+					return true;
+				}
+			}
+		}
+	}
+
+
+	return false;
+}
+
+
 
 int GcodeParser::getCoordsFromG1Parameter( const bool & isPositive, const std::string & coordsRef, const char & axisChar) {
 	
