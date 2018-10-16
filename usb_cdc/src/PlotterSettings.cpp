@@ -59,6 +59,15 @@ PlotterSettings::~PlotterSettings() {
 
 
 
+int PlotterSettings::getHeight(){
+	return height;
+}
+
+int PlotterSettings::getWidth(){
+	return width;
+}
+
+
 void PlotterSettings::setPenUp(int newupval){
 	penUp = newupval;
 }

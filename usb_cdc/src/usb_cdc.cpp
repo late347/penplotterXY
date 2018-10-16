@@ -99,11 +99,16 @@ PlotterSettings savedplottersettings; //global object keeps track of saveable an
 
 //these are device current coords global variables for plottercoords
 //REMEMBER TO UPDATE AFTER PLOTS!
+/*maybe not required to be volatile?
+ * NOTE the units of g_curX, g_curY and g_originX and g_originY should be in units of fullsteps!*/
 volatile int g_curX(250);
 volatile int g_curY(250);
 volatile int g_OriginX(0);
 volatile int g_OriginY(0);
 const int g_STEPS_FROM_EDGE(1); //keeps the origin for G28 in a safely calibrated place, so doesn't hit the limits exactly when goes to (0,0) point
+volatile double g_xFullstepsPerMM; //double fullstepsPerMillimetre ratio
+volatile double g_yFullstepsPerMM;
+
 /*global variables ends*/
 
 
@@ -123,10 +128,10 @@ DigitalIoPin *penP;
 
 
 /*debug global variables*/
-bool lYmin;
-bool lYmax;
-bool lXmax;
-bool lXmin;
+//bool lYmin;
+//bool lYmax;
+//bool lXmax;
+//bool lXmin;
 
 
 /* the following is required if runtime statistics are to be collected */
@@ -155,10 +160,10 @@ void RIT_IRQHandler(void){ //THIS VERSION IS FOR RITinterruptBresenham
 
 		/*WHEN LIMIT READS TRUE => LIMIT SHOUILD BE OPEN I.E. NOT-DEPRESSED BUTTON*/
 		bool isOK = ( limitYMinP->read() && limitYMaxP->read() && limitXMaxP->read() && limitXMinP->read() ); //check limits status inside ISR
-		 lYmin = limitYMinP->read();
-		 lYmax = limitYMaxP->read();
-		 lXmax = limitXMaxP->read();
-		 lXmin = limitXMinP->read();
+//		 lYmin = limitYMinP->read();
+//		 lYmax = limitYMaxP->read();
+//		 lXmax = limitXMaxP->read();
+//		 lXmin = limitXMinP->read();
 		if (RIT_count > 0) { //regular case, "iterate bresenham algorithm" inside interrupt handler
 
 			if (isOK) { //CALIBRATION MODE SHOULD NEVER USE RIT IRQ
@@ -1209,8 +1214,10 @@ static void execute_task(void*pvParameters) {
 	 * TODO:: make calibration task!!!*/
 	xEventGroupWaitBits(eventGroup, 0x1, pdFALSE, pdFALSE, portMAX_DELAY);
 
-
-
+	char badMessage[] = "not_ack_wasIllegalCommand\r\n";
+	const int badlen = strlen(badMessage);
+	char okMessage[] = "OK\r\n";
+	const int oklen = strlen(okMessage);
 	CommandStruct curcmd;
 
 	vTaskDelay(100);
@@ -1220,40 +1227,112 @@ static void execute_task(void*pvParameters) {
 	for(;;){
 		xQueueReceive(commandQueue, &curcmd, portMAX_DELAY); //get command from queue
 
-		if(curcmd.commandWord == CommandStruct::G1 && curcmd.isLegal){
+		/*process G1 command, and make appropriate usb_send response*/
+		if(curcmd.commandWord == CommandStruct::G1){
+			//assume 1 fullstep == 1.0mm, in keijosimulator (it was, actually, 1step == 1.0mm )
+			/*NOTE!
+			 * you must use mDraw imagesize == keijosimulator imagesize, for the real_calibration_task
+			 * to properly count the steps and calibrate the simulator and scale up the image.
+			 *
+			 * */
 
-			//assume 1 fullstep == 1.0mm,
-			double tempx = curcmd.xCoord / 100.0;
-			double tempy = curcmd.yCoord / 100.0;
+			/*1.) convert int hundredthsXCoordMillimetre into double millimetres
+			 * 2.)  multiply double millimetres  with double XfullstepsPerMillimetre
+			 * 3.) get double fullstepsamount as result of multiplication
+			 * 4.) round double fullstepsamount into int roundX
+			 * 5.) always,,, move fullsteps amounts  with plotter, plotter moves inside int valued coordinate-system
+			 * 6.) remember to update int valued globalXcoord and globalYcoord after each line plot move explicitly after having plotted*/
 
+			double tempx = g_xFullstepsPerMM * ( ((double)curcmd.xCoord) / 100.0); //note real program should have "identical" or "very much the same" Xstep/mm ratio == Ystep/mm ratio
+			double tempy = g_xFullstepsPerMM * ( ((double)curcmd.yCoord) / 100.0);
 			int roundX = std::round(tempx);
 			int roundY = std::round(tempy);
-
 			int kakka1 = 0; //for debug only!!
+
 #ifndef useLoopingBresenham //ritInterrupt-Driven Bresenham
 			refactored_BresenhamInterruptAlgorithm(g_curX, g_curY, roundX,roundY );
 			g_curX=roundX;//update current coords to the "dest coords, after move"
 			g_curY=roundY;
+			USB_send((uint8_t*) okMessage, oklen);
 			int kakka3=0;//for debug only!
 #endif
 #ifdef useLoopingBresenham //forlooping Bresenham
-			//forlooping bresenham updates globalcoords internally! this is desired (updates coords in loopcounting)!
 			plotLineGeneral(g_curX, g_curY, roundX,roundY);
 			/*UPDATE GLOBAL COORDS, ASSUME ALGORITHM WORKED AND SET CURCOORDS=ENDCOORDS
 			 * seems to work, in example test_draw_tasks */
 			g_curX=roundX;
 			g_curY=roundY;
+			USB_send((uint8_t*) okMessage, oklen);
 			int kakka2=0;//for debug only!
 #endif
 
-
 			int kakka = 0;//for debug only!
+		}
 
-
-		}else if(curcmd.commandWord == CommandStruct::M1 && curcmd.isLegal){
+		/*process M1 command (pencilServo move), and make appropriate usb_send response*/
+		else if(curcmd.commandWord == CommandStruct::M1){
 			setPenValue(curcmd.commandNumber);
+			USB_send((uint8_t*) okMessage, oklen);
 			vTaskDelay(100); //small delay to allow pencilservo time to settle
 		}
+
+		/*process M10 command, and make appropriate usb_send response*/
+		else if(curcmd.commandWord == CommandStruct::M10){
+			std::string M10responsemessage = savedplottersettings.getM10ResponseMessage(); //responds to M10message properly, with formated reply
+			USB_send((uint8_t*) M10responsemessage.c_str(), strlen(M10responsemessage.c_str()));
+		}
+
+		/*process M11 limitquery, and make appropriate usb_send response */
+		else if(curcmd.commandWord == CommandStruct::M11){
+			std::string M11LimitResponse = savedplottersettings.getM11LimitResponseMessage();
+			USB_send((uint8_t*) M11LimitResponse.c_str(), strlen(M11LimitResponse.c_str()));
+		}
+
+		/*process M2 (save pencilservo values), and make appropriate usb_send response*/
+		else if(curcmd.commandWord == CommandStruct::M2){
+			savedplottersettings.setPenUp(curcmd.penUp); //saves new pencilServovalues to memory
+			savedplottersettings.setPenDown(curcmd.penDown);
+			USB_send((uint8_t*) okMessage, oklen);
+		}
+
+		/*process M5 (getNewValues)*/
+		else if(curcmd.commandWord == CommandStruct::M5){
+			savedplottersettings.updateM5Values(curcmd); //save M5values to memory, in order to prepare for next M10message
+			USB_send((uint8_t*) okMessage, oklen);
+		}
+
+		/*process G28 (goto origin), and make appropriate usb_send response*/
+		else if(curcmd.commandWord == CommandStruct::G28){
+			/*if already at origincoords, dont move!*/
+			if(g_curX == 0 && g_curY == 0){
+				USB_send((uint8_t*) okMessage, oklen);//dontmove, BUT DO make appropriate usb_send response
+			}
+			else{
+#ifndef useLoopingBresenham  	//use ritInterrupt-Driven Bresenham, for G28 move
+				refactored_BresenhamInterruptAlgorithm(g_curX, g_curY, g_OriginX, g_OriginY ); 	//goto origin, from curCoords
+				g_curX = g_OriginX; 	//update current coords to the "dest coords, after move"
+				g_curY = g_OriginY;
+				USB_send((uint8_t*) okMessage, oklen);
+#endif
+#ifdef useLoopingBresenham 	//use forlooping Bresenham, for G28 move
+				plotLineGeneral(g_curX, g_curY, g_OriginX, g_OriginY);
+				g_curX = g_OriginX;
+				g_curY = g_OriginY;
+				USB_send((uint8_t*) okMessage, oklen);
+#endif
+			}
+		}
+
+		/*process M4 (lasercommand) AND M28_start_stepper_calibration DONT ALLOW THESE COMMANDS ANYMORE at this stage*/
+		else if(curcmd.commandWord == CommandStruct::M4 || curcmd.commandWord == CommandStruct::M28){
+			//send nak_message (notAcknowledge_wasIllegalCommand)
+			USB_send((uint8_t*) badMessage, badlen);
+		}
+		else{
+			//send nak_message (notAcknowledge_wasIllegalCommand)
+			USB_send((uint8_t*) badMessage, badlen);
+		}
+
 	}
 
 }
@@ -1290,16 +1369,13 @@ static void parse_task(void*pvParameters) {
 		//vTaskDelay(5); //vtaskdelay is used for purpose of itmprint not bugging-out
 
 		if (enterInd != std::string::npos) {
-			gcode = cppstring.substr(0, enterInd);		//found entersign, get one line of gcode
-			cppstring.erase(0, enterInd + 1);		//erase the gotten gcodeline, from the cppstring front portion, BECAUSE WE PROCESSED IT ALREADY ==>sent to parser
+			gcode = cppstring.substr(0, enterInd);//found entersign, get one line of gcode
+			cppstring.erase(0, enterInd + 1);//erase the gotten gcodeline, from the cppstring front portion, BECAUSE WE PROCESSED IT ALREADY ==>sent to parser
 
-			CommandStruct cmd = parser.parseCommand(gcode);		//send the gcode string into the parser
+			CommandStruct cmd = parser.parseCommand(gcode);	//send the gcode string into the parser
 
-			if (cmd.commandWord == CommandStruct::M10 && cmd.isLegal) {
-				USB_send((uint8_t*) initialMessage, initlen);
-			} else if (cmd.isLegal && cmd.commandWord != CommandStruct::uninitialized) {
-				xQueueSendToBack(commandQueue, &cmd, portMAX_DELAY);	//any legal message send ok, but also send command to queue
-				USB_send((uint8_t*) okMessage, oklen);
+			if (cmd.isLegal && cmd.commandWord != CommandStruct::uninitialized) {
+				xQueueSendToBack(commandQueue, &cmd, portMAX_DELAY); 	//any legal message => send into queue => executetask reads command =>  appropriate USB_send reply
 			} else {
 				USB_send((uint8_t*) badMessage, strlen(badMessage));
 			}
@@ -1427,7 +1503,7 @@ static void real_calibrate_task(void*pvParameters){
 	DigitalIoPin limitXMax(0, 9, DigitalIoPin::pullup, false);
 	DigitalIoPin limitXMin(0, 29, DigitalIoPin::pullup, false);
 
-	//assign global pointers, tentatively... NOTE! they may change during calibration!
+	//assign global pointers
 	limitYMinP = &limitYMin;
 	limitYMaxP = &limitYMax;
 	limitXMinP = &limitXMin;
@@ -1440,13 +1516,24 @@ static void real_calibrate_task(void*pvParameters){
 	dirYP = &dirY;
 	penP = &pen;
 
-	/*assign limitpointers tentatively, into the PlotterSettings global obj, so they're no longer nullpointers
+	/*NOTE!
+	 * because of the DigitalIoPin class was written in a particular way,
+	 * we can use a simple strategy to expectCertainLimitpin and detectALimitpin in
+	 * calibration phase and if those pins are different, then swap-by-value.
 	 *
-	 * This is done, because you want to be able to answer to an M11 limitquery, even during the servoCalibration phase
-	 *  (it simply means that we are able to give M11response, but maybe with "wrongly identified limits" before stepper calibration is done. )
+	 * We can simply use swap-by-value, because DigitalIoPin constructor sets-up
+	 * the ChipAPIfunctions, but afterwards DigitalIoPin object relies on its own datamembers
+	 * for any and all function calls for memberfunctions
 	 *
-	 * NOTE! remember to swap the pointers inside PlotterSettings,
-	 * if the calibration phase  indicates that limitpins were swapped*/
+	 * Therefore, it doesnt matter "in which DigitalIoPin's constructor" certain pins and ports were initialized
+	 * only thing what matters, is that the correct pin and port datamember is used to call the DigitalIoPin memberfunctions
+	 *
+	 * Therefore, for ease of use it is best to avoid pointerswapping. Simply swap-by-value, so you can still get
+	 * the correct datamembers copied into the correct DigitalIoPin, and then you can simply use
+	 * the correct name of the pinObject as you would regularly.
+	 *
+	 * pointer swapping isn't necessary either.
+	 * */
 	savedplottersettings.setLimitPointers(limitYMaxP, limitYMinP, limitXMaxP, limitXMinP);
 
 	GcodeParser calibrationParser; 		//should  allow ONLY configuration commands and savesettings commands and pencilservo commands from mDraw during calibrationphase
@@ -1482,7 +1569,7 @@ static void real_calibrate_task(void*pvParameters){
 
 
 
-	/*Allowable commands from mDraw at this point during calibration are as follows:
+	/*Allowable commands from mDraw at this point during servocalibration are as follows:
 	 * M1 pencilServo
 	 * M10 settings command
 	 * M2 savePencilValues
@@ -1490,7 +1577,9 @@ static void real_calibrate_task(void*pvParameters){
 	 * M11 limitQuery
 	 * M28 begin stepper calibration procedure
 	 *
-	 * Then, you wait until calibration finishes, and then you set EventGroupBit true
+	 * Then, you wait until steppercalibration finishes,
+	 *
+	 * then and then you set EventGroupBit true
 	 *  to allow other tasks to do work*/
 
 	while (isCalibratingServo) {
@@ -1553,7 +1642,8 @@ static void real_calibrate_task(void*pvParameters){
 
 
 
-//TODO::FINISH CALIBRATION TASK FOR STEPCOUNTING AND DEBUG IN PLOTTERSIMULATOR!!
+//initiate stepper motors calibration phase
+	//start steppercalibration with Y-axis
 
 	dirX.write(false);//set dirs so that you move outwards from origin
 	dirY.write(false);
@@ -1569,30 +1659,35 @@ static void real_calibrate_task(void*pvParameters){
 		limit3detected = limitXMax.read();
 		limit4detected = limitXMin.read();
 
-		if ( limit1detected && limit2detected && limit3detected && limit4detected) { //all limits open, keep moving outwards
+		if ( limit1detected && limit2detected && limit3detected && limit4detected) { //all limits open, keep moving outwards toward Ymax
 			stepVert();
 		} else if (  (!limit1detected && limit2detected && limit3detected && limit4detected) ||		/*check if only single limitDetected, otherwise if multiple limits triggered => calibration got entirely fucked up*/
 					 (limit1detected && !limit2detected && limit3detected && limit4detected) ||
 					 (limit1detected && limit2detected && !limit3detected && limit4detected) ||
 					 (limit1detected && limit2detected && limit3detected && !limit4detected)
 				) {
-			if(!limit1detected){
-				int kakka1=0; //do nothing Ymax==Ymax, kakka is only for debugging purposes!
-			}else if (!limit2detected){
-				swapDigitalIoPins(limitYMax, limitYMin);//Ymin encountered, Ymax expected, swap them
+			if(!limit1detected){ 	//do nothing Ymax==Ymax,
+				int kakka1=0; 	// only for debugging purposes!
+			}else if (!limit2detected){ 	//Ymin detected, Ymax expected, swap them
+				swapDigitalIoPins(limitYMax, limitYMin);
 
-			}else if(!limit3detected){
-				swapDigitalIoPins(limitYMax, limitXMax); //Xmax encountered, Ymax expected, swap them
-			}else if(!limit4detected){
-				swapDigitalIoPins(limitYMax, limitXMin);//Xmin encountered, Ymax expected, swap them
+			}else if(!limit3detected){ 	//Xmax detected, Ymax expected, swap them
+				swapDigitalIoPins(limitYMax, limitXMax);
+			}else if(!limit4detected){ 	//Xmin detected, Ymax expected, swap them
+				swapDigitalIoPins(limitYMax, limitXMin);
 			}
 			++yTouches;
-			if (ysteps == 0) {
-				countingY = true;
-			}
+			countingY = true; //sets up boolean so that we are getting ready toBeginCountingYsteps
+
 			dirYP->write(!dirYP->read()); //invert dirPin value, turn around
-			for(int j = 0; j < g_STEPS_FROM_EDGE; j++){	//move a safe and deterministic distance away from edge, and that marks as the zero-point for stepcount measuring (allows safe origin values for G28)
+
+			/*move a safe and deterministic distance away from edge,
+			 * count the "TurningSteps" from limitcontact also,
+			 * that way, we get accurate ystepcount for stepcount/millimetre ratio, while
+			 * still easily moving safely away from the limitEdge*/
+			for(int j = 0; j < g_STEPS_FROM_EDGE; j++){
 				stepVert();
+				++ysteps; 	//count "TurningSteps" but still move deterministic amount of TurningSteps (later use whileloop for counting)
 			}
 
 
@@ -1615,36 +1710,37 @@ static void real_calibrate_task(void*pvParameters){
 		limit2detected = limitYMin.read(); // DO EXPECT to find Ymin among the three remaining booleans at next contact
 		limit3detected = limitXMax.read();
 		limit4detected = limitXMin.read();
-		if( limit1detected && limit2detected && limit3detected && limit4detected ){ 	//all limitsOpen, keeep moving to Ymin direction
+		if( limit1detected && limit2detected && limit3detected && limit4detected ){ 	//allLimitsOpen, keep moving towards Ymin direction
 			stepVert();
-			if(countingY) //will start counting from the point where the earlier forloop ended-up (as intended)
+			if(countingY) 		//keep counting from where the earlier forloop ended (as intended)
 				++ysteps;
 		} else if(  (!limit1detected && limit2detected && limit3detected && limit4detected) ||
 					(limit1detected && !limit2detected && limit3detected && limit4detected) ||
 					(limit1detected && limit2detected && !limit3detected && limit4detected) ||
 					(limit1detected && limit2detected && limit3detected && !limit4detected)
 				){
-			if(!limit1detected){
+			if(!limit1detected){ 	//detect Ymax, even though we started the move from there??? error happened
 				USB_send((uint8_t*) calibrationError, calibrationErrorLen); //send debug message to mDraw! 	//something went terribly wrong,critical error, we hit the earlier limit again?!
 				stepX.write(false);
 				stepY.write(false);
 				while (1) {}; //busyloop
 			}
-			if (!limit2detected){
-				int kakka1  =1;//do nothing expected Ymin and found it //for debug only!
-			}else if(!limit3detected){
-				swapDigitalIoPins(limitYMin, limitXMax);	//Xmax detected, but Ymin expected, swap
-			}else if (!limit4detected){
-				swapDigitalIoPins(limitYMin, limitXMin);	//Xmin detected, but Ymin expected, swap
+			if (!limit2detected){ 	//detect Ymin, expected Ymin, do nothing
+				int kakka1 = 1; 	//for debug only!
+			}else if(!limit3detected){ 	// detect Xmax, expect Ymin, swap
+				swapDigitalIoPins(limitYMin, limitXMax);
+			}else if (!limit4detected){ 	//detect Xmin, expect Ymin, swap
+				swapDigitalIoPins(limitYMin, limitXMin);
 			}
 			++yTouches;
 			dirYP->write(!dirYP->read()); //invert dirPin value, turn around
+
 			for(int k = 0; k < g_STEPS_FROM_EDGE; k++){ //NOTE!! turn safely&deterministicaly  atTheEdge,
 				stepVert();
-				--ysteps; // ALSO, NOTE! reduce the amount of"turningSteps" from total ysteps travelled thusfar
+				 // ALSO, NOTE! stop counting ysteps, BUT still make deterministic turningSteps away fromTheEdge
 			}
 			/*after the forloop has run, we should be at the  G28 y-coordinate (origin's y-coordinate)*/
-			g_OriginY=1;
+			 g_curY = g_OriginY = 0; //initialize curYcoord, and originYcoord both to zero stepYcoord
 
 		}else{
 			USB_send((uint8_t*) calibrationError, calibrationErrorLen); //send debug message to mDraw!//multiple limits triggered at same time, CALIBRATION ERROR! CRITICAL ERROR!!! stay in foreverloop!!!
@@ -1655,7 +1751,7 @@ static void real_calibrate_task(void*pvParameters){
 	}
 
 
-	/*try to find the Xmax limit, expect to find that,,, should have already found Ymin and Ymax limits earlier*/
+	/*try to find the Xmax limit, expect to find that Xmax first...*/
 	while(xTouches < 1){
 		limit1detected = limitYMax.read(); 	// dont expect to get limit1 again!, we just hit it earlier!
 		limit2detected = limitYMin.read(); // dont expect to get limit2 again!, we just hit it earlier!
@@ -1663,7 +1759,7 @@ static void real_calibrate_task(void*pvParameters){
 		limit4detected = limitXMin.read();
 
 		if(limit1detected && limit2detected && limit3detected && limit4detected){
-			stepHoriz();
+			stepHoriz(); 	//no limits triggered, then move in x-axis toward expected Xmax
 		}else if (  (!limit1detected && limit2detected && limit3detected && limit4detected) ||
 					(limit1detected && !limit2detected && limit3detected && limit4detected) ||
 					(limit1detected && limit2detected && !limit3detected && limit4detected) ||
@@ -1674,19 +1770,20 @@ static void real_calibrate_task(void*pvParameters){
 				stepX.write(false);
 				stepY.write(false);
 				while (1) {}; //busyloop
-			} else if(!limit3detected){
+			} else if(!limit3detected){ 	//detect Xmax, expect Xmax, do nothing
 				int kakka6=2; //for debug only!! got the expected limit Xmax, and detected Xmax
 			}else{
 				//detect Xmin, expected Xmax, do swap
 				swapDigitalIoPins(limitXMin, limitXMax);	//Xmin detected, but Xmax expected, swap
 			}
+
 			++xTouches;
-			if (xsteps == 0) {
-				countingX = true;
-			}
+			countingX = true; //prepare bool to start counting xsteps in next loop
 			dirXP->write( !dirXP->read() ); //invert xdirPin
-			for(int i = 0; i < g_STEPS_FROM_EDGE; i++){ //move safely from edge
+
+			for(int i = 0; i < g_STEPS_FROM_EDGE; i++){ //move safely from XmaxEdge, BUT ALSO count these "TurningSteps"
 				stepHoriz();
+				++xsteps;
 			}
 
 		}else{
@@ -1701,21 +1798,21 @@ static void real_calibrate_task(void*pvParameters){
 	while(xTouches < 2){
 		limit1detected = limitYMax.read(); 	// dont expect to get limit1 again!, we just hit it earlier!
 		limit2detected = limitYMin.read(); // dont expect to get limit2 again!, we just hit it earlier!
-		limit3detected = limitXMax.read(); //dont expect  Xmax
+		limit3detected = limitXMax.read(); //dont expect  Xmax,  we just hit it earlier!
 		limit4detected = limitXMin.read(); // DO EXPECT Xmin
 
-		if(limit1detected && limit2detected && limit3detected && limit4detected){
+		if(limit1detected && limit2detected && limit3detected && limit4detected){ 	//all limits are open, keep stepping toward Xmin
 			stepHoriz();
-			if(countingX)
+			if(countingX) //keep counting Xsteps, from where turning forloop ended at (as intended)
 				++xsteps;
 		} else if( (!limit1detected && limit2detected && limit3detected && limit4detected) ||
 				   (limit1detected && !limit2detected && limit3detected && limit4detected) ||
 				   (limit1detected && limit2detected && !limit3detected && limit4detected) ||
 				   (limit1detected && limit2detected && limit3detected && !limit4detected)
 				){
-			if(!limit4detected){
-				int kakka7=3; //dont do anything, detected Xmin, expected Xmin //for debug only!
-			} else{
+			if(!limit4detected){ 	//detected Xmin, expected Xmin, do nothing
+				int kakka7=3; //for debug only!
+			} else{ 	// in any other case, critical error occured
 				USB_send((uint8_t*) calibrationError, calibrationErrorLen); //send debug message to mDraw!// CALIBRATION ERROR! CRITICAL ERROR!!! stay in foreverloop!!!
 				stepX.write(false);
 				stepY.write(false);
@@ -1724,12 +1821,19 @@ static void real_calibrate_task(void*pvParameters){
 
 			++xTouches;
 			dirXP->write( !dirXP->read() ); //invert xdirPin
-			for(int i = 0; i < g_STEPS_FROM_EDGE; i++){ //move safely from edge
+			//stop counting xsteps
+
+			for(int i = 0; i < g_STEPS_FROM_EDGE; i++){ //move safely from edge, BUT don't count the "TurningSteps"
 				stepHoriz();
-				--xsteps; //reduce the "turningSteps" from xtotal steps
+
 			}
-			/*after the forloop has run, we should be at the  G28 x-coordinate (origin's x-coordinate)*/
-			g_OriginX=1;
+
+			/*after the forloop has run,
+			 * we have basically allowed the G28 origin coordinates to be in a safe location
+			 * that will be safe distance away from limitswitches,
+			 *
+			 * we should be at the  G28 x-coordinate (origin's x-coordinate)*/
+			g_curX = g_OriginX = 0;
 
 		}else {
 			USB_send((uint8_t*) calibrationError, calibrationErrorLen); //send debug message to mDraw!//multiple limits triggered at same time, CALIBRATION ERROR! CRITICAL ERROR!!! stay in foreverloop!!!
@@ -1746,9 +1850,17 @@ static void real_calibrate_task(void*pvParameters){
 
 
 /*UPDATE GLOBAL CUR_COORDS AND GLOBAL ORIGIN_COORDS*/
- 	 g_curX=g_OriginX;
- 	 g_curY=g_OriginY;
+// 	 g_curX=g_OriginX;
+// 	 g_curY=g_OriginY;
 
+ /*count the ratio of both
+  * Xstepcount/ heightMM
+  * and ratio Ystepcount / widthMM
+  *
+  * NOTE! both ratios are expected to be equal of course!!!
+  * */
+ 	 g_xFullstepsPerMM = (double)xsteps / (double)savedplottersettings.getWidth();
+ 	 g_yFullstepsPerMM = (double)ysteps / (double)savedplottersettings.getHeight();
 	vTaskDelay(1000);
 
 	/*set eventbit0 true

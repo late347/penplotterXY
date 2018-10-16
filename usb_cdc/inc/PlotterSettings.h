@@ -75,6 +75,9 @@ public:
 	void setWidth(int);
 	void setSpeed(int);
 
+	int getHeight();
+	int getWidth();
+
 	void updateM5Values(CommandStruct &);
 	void setLimitPointers(DigitalIoPin*, DigitalIoPin*, DigitalIoPin*, DigitalIoPin*);
 
