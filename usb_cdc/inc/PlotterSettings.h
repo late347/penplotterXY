@@ -10,7 +10,7 @@
  *
  *      DONT store PLOTTER STATE in the PlotterSettings object, only mDraw saveable settings like height, width, speed, penUp, penDown
  *
- *      the state of the plotter cannot really be encapsulated in one object
+ *      the state of the plotter cannot really be encapsulated that well
  *      because ISR requires access to some variables
  *
  *       curX, curY which contains current location of plotter
@@ -32,6 +32,8 @@ public:
 	 * these DigitalIoPin pointers, just so they are still pointing to existings iopin objects
 	 *
 	 * NOTE! remember to calibrate the limitpointers and later update the limitpointers to the correct pointers after calibration!
+	 * EDITED:: ACTUALLY, you can keep the limitpointers pointing at the same objects, as per original pinlayout
+	 * THE REASON, is because real_calibration_task will perform swap-by-value of DigitalIoPin limitpointer objects
 	 * */
 	PlotterSettings(
 			int newpenup = 160,
