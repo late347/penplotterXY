@@ -18,7 +18,7 @@
 
 #include <cr_section_macros.h>
 
-// TODO: insert other include files here
+/*freeRTOS includes, and C++ includes*/
 #include "FreeRTOS.h"
 #include "task.h"
 #include "ITM_write.h"
@@ -34,36 +34,35 @@
 #include <vector>
 #include <cmath>
 #include "event_groups.h"
-//regular and freertos includes ends
 
-// User-defined classes, structs and includes
+
+/* custom-defined classes, structs and includes*/
 #include "GcodeParser.h"
 #include "CommandStruct.h"
 #include "PlotterSettings.h"
-//user defined includes ends
+
 
 
 /*CONDITINAL COMPILATION OPTIONS****************************/
 
+//#define useLaser
 //#define useLoopingBresenham	 // NOTE! this option chooses if you want to use RIT_interrupt-driven Bresenham algorithm, OR forlooping Bresenham algorithm
 //#define keijoSimulator //EDITED:: NOTE! keijosimulator is no longer supported conditional compilation option! it was used for inverting motoraxes for plottersimulator debugging
 
 
-/*options and variables when using RITinterruptBresingham*/
- //variables for RITinterruptBresingham
-
-volatile int g_dx, g_dy, g_nabla;
+/*variables when using RIT_interrupt_Bresenham*/
+volatile std::atomic<int> g_dx(0), g_dy(0), g_nabla(0);
 int g_x_1, g_x_0, g_y_1, g_y_0;
 
 
 /*********************************************************/
 
 
-//freertos globals defined
-QueueHandle_t commandQueue;
-SemaphoreHandle_t sbRIT; //NOTE!! THIS SEMAPHORE IS NECESSARY! DOUBLECHECK MAIN() TO SEE IF CREATED CORRECTLY...
-EventGroupHandle_t eventGroup;
-//freertos globals ends
+/*freertos globals defined*/
+QueueHandle_t commandQueue; 	// send Gcode commands as CommandStruct into queue => allows parser_task & execute_task communication
+SemaphoreHandle_t sbRIT; //NOTE!! THIS SEMAPHORE IS NECESSARY for rit_interrupt handlers!
+EventGroupHandle_t eventGroup; //EventGroup is used to block parser_task and execute_task for duration of servocalibration & steppercalibration
+
 
 
 /*Bresenham's algorithm variables, and notation is based on Bresenham's published paper
@@ -76,37 +75,34 @@ and also the tabulated results section near the end was useful. Some functions s
 decidem1parameters, getOctant, and SwapAxes were based on the journal article results.
 */
 
-//NOTE! loopingBresenham version of Interrupt Handler function uses THIS EXTRA VARIABLE, USE CONDITIONAL COMPILATION...
+/*NOTE! forloop_Bresenham version of Interrupt Handler function uses this extra variable below*/
 volatile std::atomic<int> executeM1orM2(0); //check 1 or 2 inside isr to decide USED FOR loopingBresenham versio
 
 
-//These global variables are shared usage between either case of conditional compilation Interrupt Handlers...
-volatile int m1parameter = 0;//  determine which pin is driven into which direction, straight motorMove horiz OR vert
-volatile int m2parameter = 0;//   determine which two pins are driven into which direction at the same time, diagonal motorMove
-const int ppsValue = 2000;	//arbitrary value for pps, it is more useful for RIT_interrupt-Driven Bresenham because it will affect the constant speed greatly (forlooping Bresenham only makes always 2 halfsteps with this ppsValue)
+/*These global variables are shared usage, between either case of conditional compilation RIT_Interrupt Handlers...*/
+volatile std::atomic<int> m1parameter(0);//  determine which pin is driven into which direction, straight motorMove horiz OR vert
+volatile std::atomic<int> m2parameter(0);//   determine which two pins are driven into which direction at the same time, diagonal motorMove
+const int ppsValue = 2000;	//arbitrary value for pps, it is more useful for RIT_interrupt-Driven Bresenham because it will affect the constant speed greatly (forloop_Bresenham only makes always 2 halfsteps with this ppsValue)
 volatile uint32_t RIT_count; //NOTE! this variable is used as amountOfHalfpulses which is double the amount of fullsteps, to drive either version of Bresenham
-static volatile std::atomic<bool> pulseState(true);//NOTE!! THIS VARIABLE IS NECESSARY for rit interrupt handlers! It is used for halfpulsing
-volatile std::atomic<bool> limitStatusOK(true); //global variable that the tasks can read, but RIT_isr can modify if you hit the limits.
+volatile std::atomic<bool> pulseState(true);//NOTE!! THIS VARIABLE IS NECESSARY for rit interrupt handlers! It is used for halfpulsing
+volatile std::atomic<bool> limitStatusOK(true); //global variable that the tasks can read, but RIT_isr can modify if motor hits the limits.
 
 
 PlotterSettings savedplottersettings; //global object keeps track of saveable and saved mDraw settings
 
-//these are device current coords global variables for plottercoords
-//REMEMBER TO UPDATE AFTER PLOTS!
-/*maybe not required to be volatile?
- * NOTE the units of g_curX, g_curY and g_originX and g_originY should be in units of fullsteps!*/
-volatile int g_curX(250);
-volatile int g_curY(250);
-volatile int g_OriginX(0);
-volatile int g_OriginY(0);
-const int g_STEPS_FROM_EDGE(1); //keeps the origin for G28 in a safely calibrated place, so doesn't hit the limits exactly when goes to (0,0) point
-volatile double g_xFullstepsPerMM; //double fullstepsPerMillimetre ratio
-volatile double g_yFullstepsPerMM;
-
-/*global variables ends*/
+/*these are current coordinates global variables for plotterdevice*/
+volatile std::atomic<int> g_curX(250);// NOTE the units of g_curX, g_curY and g_originX and g_originY should be in units of fullsteps!
+volatile std::atomic<int> g_curY(250);
+int g_OriginX(0);
+int g_OriginY(0);
+const int g_STEPS_FROM_EDGE(1); //keeps the origin for G28 in a safely calibrated place, so doesn't hit the limits exactly at (0, 0) NOTE! use values like 360 for realPlotterDevice (with microstepping  mode, with plotter)
+double g_xFullstepsPerMM(0); //double fullstepsPerMillimetre ratio
+double g_yFullstepsPerMM(0);
 
 
-//NOTE!! THESE GLOBAL POINTERS ARE NECESSARY!
+
+
+/*global pointers of type DigitalIoPin, (required to be global for RIT_interrupt handlers and many tasks/functions) */
 DigitalIoPin *limitYMinP;
 DigitalIoPin *limitYMaxP;
 DigitalIoPin *limitXMaxP;
@@ -117,7 +113,7 @@ DigitalIoPin *stepYP;
 DigitalIoPin *dirYP;
 DigitalIoPin *laserP;
 DigitalIoPin *penP;
-//GlobalPointers End here
+
 
 
 
@@ -138,26 +134,17 @@ void vConfigureTimerForRunTimeStats( void ) {
 #ifndef useLoopingBresenham
 extern "C" {
 void RIT_IRQHandler(void) { //THIS VERSION IS FOR RITinterruptBresenham
-	// This used to check if a context switch is required
+
 	portBASE_TYPE xHigherPriorityWoken = pdFALSE;
-	// Tell timer that we have processed the interrupt.
-	// Timer then removes the IRQ until next match occurs
 	Chip_RIT_ClearIntStatus(LPC_RITIMER);	// clear IRQ flag
 
-	static bool expectm2 = false; //boolean keeps track if you are writing to m1Pin or m2Pin in a particular halfpulse
-	//should never be nullpointers when starting ritstart
-
+	static std::atomic<bool> expectm2(false); //boolean keeps track if you are writing to m1Pin or m2Pin in a particular halfpulse. MUST be static
+	static std::atomic<bool> isEven(true);	//keeps track if you want to increment/decrement globalcoords (that is, keeps track of each fullstep, when halfstepping inside isr)
 	if (RIT_count > 0) { //regular case, "iterate bresenham algorithm" inside interrupt handler
-		/*WHEN LIMIT READS TRUE => LIMIT SHOUILD BE OPEN I.E. NOT-DEPRESSED BUTTON*/
 		limitStatusOK = (limitYMinP->read() && limitYMaxP->read() && limitXMaxP->read() && limitXMinP->read()); //check limits status inside ISR
-
-		if (limitStatusOK) { //CALIBRATION MODE SHOULD NEVER USE RIT IRQ
-			/*at each fullstep, in the beginning,
-			 * use decisionparameter to iterate over bresenham
-			 * When RIT_count is odd, => implies that current ISR round is basically
-			 * writing false cycle to the steppins, to complete any given fullstep*/
-			if (RIT_count % 2 == 0) {
-
+		isEven = (RIT_count % 2 == 0);
+		if (limitStatusOK) {
+			if (isEven) {
 				if (g_nabla >= 0) {
 					expectm2 = true;
 					g_nabla = g_nabla + 2 * g_dy - 2 * g_dx;
@@ -166,40 +153,34 @@ void RIT_IRQHandler(void) { //THIS VERSION IS FOR RITinterruptBresenham
 					g_nabla = g_nabla + 2 * g_dy;
 				}
 			}
-
-			/*prepare to halfpulse the m1pin
-			 * m1pin is notation based on Bresenhams original paper
-			 * the dirPins are already pre-computed before ISR
-			 * for each line plot, for each G1command, dirPins stay same
-			 * */
 			if (!expectm2) {
 				if (m1parameter == 1 || m1parameter == 5) {
 					stepXP->write(pulseState);
 				} else if (m1parameter == 3 || m1parameter == 7) {
 					stepYP->write(pulseState);
 				}
-			}
-			/*else perform  halfpulse m2pin for diagonal M2Move
-			 * only perform the necessary checks inside ISR,
-			 * rely on the setupBresenham to have correctly
-			 * configured dirPins before line plot
-			 * NOTE!!!
-			 *   expectm2 is static bool initialized at false, so that it keeps
-			 *   track of its own state after each ISR iterating round
-			 *   then, at the end of final halfpulse ISR iterating round, remember to reset expectm2 to false
-			 *   */
-			else {
+				if(isEven){
+					switch(m1parameter){
+					case 1: ++g_curX; break;
+					case 5: --g_curX; break;
+					case 3: ++g_curY; break;
+					case 7: --g_curY; break;
+					}
+				}
+			}else {
 				stepYP->write(pulseState);
 				stepXP->write(pulseState);
+				if(isEven){
+					switch(m2parameter){
+					case 2: ++g_curX; ++g_curY; break;
+					case 4: --g_curX; ++g_curY; break;
+					case 6: --g_curX; --g_curY; break;
+					case 8: ++g_curX; --g_curY; break;
+					}
+				}
 			}
-
 			pulseState = !pulseState;
 			RIT_count--;
-			/*ISR will still be called, when RIT_count == 0,
-			 * but then the interrupt doesnt write to any pins
-			 * when RIT_count==0, interrupt simply ends and
-			 * resets RIT_count= and expectm2=false  */
-
 		} else { //WE HIT THE WALL, set rit_count=0, stop stepPins, and soon the motor will stop, hopefully
 			stepXP->write(false);
 			stepYP->write(false);
@@ -219,6 +200,7 @@ void RIT_IRQHandler(void) { //THIS VERSION IS FOR RITinterruptBresenham
 }
 }
 
+
 #endif
 /*********************************************************************************************************************************/
 
@@ -227,46 +209,79 @@ void RIT_IRQHandler(void) { //THIS VERSION IS FOR RITinterruptBresenham
 #ifdef useLoopingBresenham
 extern "C" {
 void RIT_IRQHandler(void) {
-	// This used to check if a context switch is required
 	portBASE_TYPE xHigherPriorityWoken = pdFALSE;
-	// Tell timer that we have processed the interrupt.
-	// Timer then removes the IRQ until next match occurs
 	Chip_RIT_ClearIntStatus(LPC_RITIMER); // clear IRQ flag
-
-
-		if (RIT_count > 0) {
-			RIT_count--;
-			// do something useful here...
-			limitStatusOK = (  limitYMinP->read() && limitYMaxP->read() && limitXMaxP->read() && limitXMinP->read()  );
-
-			if (limitStatusOK) {
-				if(executeM1orM2==1) { //execute M1 pattern move
-					switch(m1parameter) { //actuate only one motor straight move
-					case 1: stepXP->write(pulseState); break;
-					case 3: stepYP->write(pulseState); break;
-					case 5: stepXP->write(pulseState); break;
-					case 7: stepYP->write(pulseState); break;
-					default: break;//shouldnt be here
-					}
-				}else if(executeM1orM2 == 2){//execute M2 pattern move
-					stepXP->write(pulseState);//actuate both motors diagonal move
+	static std::atomic<bool> isEven(true);
+	if (RIT_count > 0) {
+		isEven = (RIT_count % 2 == 0);
+		RIT_count--;
+		limitStatusOK = (limitYMinP->read() && limitYMaxP->read() && limitXMaxP->read() && limitXMinP->read());
+		if (limitStatusOK) {
+			if (executeM1orM2 == 1) { //execute M1 pattern move
+				switch (m1parameter) { //actuate only one motor straight move
+				case 1:
+					stepXP->write(pulseState);
+					if (isEven) //per each fullstep, increment/decrement only once, the global coords
+						++g_curX;
+					break;
+				case 3:
 					stepYP->write(pulseState);
+					if (isEven)
+						++g_curY;
+					break;
+				case 5:
+					stepXP->write(pulseState);
+					if (isEven)
+						--g_curX;
+					break;
+				case 7:
+					stepYP->write(pulseState);
+					if (isEven)
+						--g_curY;
+					break;
+				default:
+					break; //shouldnt be here
 				}
-				pulseState = !pulseState;//move motor and toggle pulsestate rit_halfpulses
-			} else {//WE HIT THE WALL, set rit_count=0 and soon the motor will stop, hopefully
-				stepXP->write(false);
-				stepYP->write(false);
-				RIT_count = 0;
+			} else if (executeM1orM2 == 2) { //execute M2 pattern move
+				stepXP->write(pulseState); //actuate both motors diagonal move
+				stepYP->write(pulseState);
+				if (isEven) {
+					switch (m2parameter) {
+					case 2:
+						++g_curX;
+						++g_curY;
+						break;
+					case 4:
+						--g_curX;
+						++g_curY;
+						break;
+					case 6:
+						--g_curX;
+						--g_curY;
+						break;
+					case 8:
+						++g_curX;
+						--g_curY;
+						break;
+					default:
+						break; //shouldnt be here
+					}
+				}
 			}
-		} else {
-			pulseState=true;
-			Chip_RIT_Disable(LPC_RITIMER); // disable timer
-			// Give semaphore and set context switch flag if a higher priority task was woken up
-			xSemaphoreGiveFromISR(sbRIT, &xHigherPriorityWoken);
+			pulseState = !pulseState; //move motor and toggle pulsestate rit_halfpulses
+		} else { //WE HIT THE WALL, set rit_count=0 and soon the motor will stop, hopefully
+			stepXP->write(false);
+			stepYP->write(false);
+			RIT_count = 0;
 		}
-		// End the ISR and (possibly) do a context switch
-		portEND_SWITCHING_ISR(xHigherPriorityWoken);
-
+	} else {
+		pulseState = true;
+		Chip_RIT_Disable(LPC_RITIMER); // disable timer
+		// Give semaphore and set context switch flag if a higher priority task was woken up
+		xSemaphoreGiveFromISR(sbRIT, &xHigherPriorityWoken);
+	}
+	// End the ISR and (possibly) do a context switch
+	portEND_SWITCHING_ISR(xHigherPriorityWoken);
 
 }
 }
@@ -670,33 +685,33 @@ int adjustm2motor(int curOctant) {
 }
 
 
-/*PEN-SERVO SETUP FOR THE PROJECT, using SCTimer0Large*/
+/*PEN-SERVO SETUP FOR THE PROJECT, using SCTimer0Large lowcounter*/
 void setupPenServo(){
 	LPC_SCT0->CONFIG |= (1 << 17); // two 16-bit timers, auto limit, use only the one counter... leave other un-used
-		LPC_SCT0->CTRL_L |= (72-1) << 5; // set prescaler, SCTimer/PWM clock == 72mhz / 72 == 1mhz
+	LPC_SCT0->CTRL_L |= (72 - 1) << 5; // set prescaler, SCTimer/PWM clock == 72mhz / 72 == 1mhz
 
-		//matchrel1 controls duty cycle , min=1000, max=2000, center=1500
-		//matchrel0 controls the main frequency
-		LPC_SCT0->MATCHREL[0].L = 20000-1; // match 0 @ 20000 / 1000000Hz =  0,02s period = 50Hz drivingfrequency, as required
-		LPC_SCT0->MATCHREL[1].L = 1500; // match 1 used for duty cycle (initialize at center for servo), period = 1500 / 1000000 = 0,0015s = 1.5ms period, as required, for center position
+	//matchrel1 controls duty cycle , min=1000, max=2000, center=1500
+	//matchrel0 controls the main frequency
+	LPC_SCT0->MATCHREL[0].L = 20000 - 1; // match 0 @ 20000 / 1000000Hz =  0,02s period = 50Hz drivingfrequency, as required
+	LPC_SCT0->MATCHREL[1].L = 1500; // match 1 used for duty cycle (initialize at center for servo), period = 1500 / 1000000 = 0,0015s = 1.5ms period, as required, for center position
 
-		/*reassigns output to pin
-		 *
-		 *NOTE !!! CHANGE THE MOVABLE PIN TO THE CORRECT PIN FOR PLOTTERPIN!!!
-		 *
-		 **/
-		Chip_SWM_MovablePortPinAssign( SWM_SCT0_OUT0_O,  0,10);	//SERVOPIN FOR PEN P_0.10 drive it to the center
+	/*reassigns output to pin
+	 *
+	 *NOTE !!! CHANGE THE MOVABLE PIN TO THE CORRECT PIN FOR PLOTTERPIN!!!
+	 *
+	 **/
+	Chip_SWM_MovablePortPinAssign(SWM_SCT0_OUT0_O, 0, 10);//SERVOPIN FOR PEN P_0.10 drive it to the center
 
-		LPC_SCT0->EVENT[0].STATE = 0xFFFFFFFF; // event 0 happens in all states
-		LPC_SCT0->EVENT[0].CTRL = (1 << 12); // match 0 condition only
-		LPC_SCT0->EVENT[1].STATE = 0xFFFFFFFF; // event 1 happens in all states
-		LPC_SCT0->EVENT[1].CTRL = (1 << 0) | (1 << 12); // match 1 condition only
-		LPC_SCT0->OUT[0].SET = (1 << 0); // event 0 will set SCTx_OUT0 output, then we get dutycycle
-		LPC_SCT0->OUT[0].CLR = (1 << 1); // event 1 will clear SCTx_OUT0
-		LPC_SCT0->CTRL_L &= ~(1 << 2);// unhalt it by clearing bit 2 of CTRL reg
+	LPC_SCT0->EVENT[0].STATE = 0xFFFFFFFF; // event 0 happens in all states
+	LPC_SCT0->EVENT[0].CTRL = (1 << 12); // match 0 condition only
+	LPC_SCT0->EVENT[1].STATE = 0xFFFFFFFF; // event 1 happens in all states
+	LPC_SCT0->EVENT[1].CTRL = (1 << 0) | (1 << 12); // match 1 condition only
+	LPC_SCT0->OUT[0].SET = (1 << 0); // event 0 will set SCTx_OUT0 output, then we get dutycycle
+	LPC_SCT0->OUT[0].CLR = (1 << 1); // event 1 will clear SCTx_OUT0
+	LPC_SCT0->CTRL_L &= ~(1 << 2); // unhalt it by clearing bit 2 of CTRL reg
 }
 
-/*PEN-SERVO SET NEW VALUE FOR THE PROJECT, using SCTimer0Large*/
+/*PEN-SERVO SET NEW VALUE FOR THE PROJECT, using SCTimer0Large lowcounter*/
 void setPenValue(int amount) {
 	bool allowed = false;
 	int newval = 0;
@@ -714,6 +729,46 @@ void setPenValue(int amount) {
 		LPC_SCT0->MATCHREL[1].L = newval;
 	}
 }
+
+
+/*LASER SETUP, using SCTimer0Large highcounter*/
+void setupLaser(){
+
+	LPC_SCT0->CONFIG |= (3 << 17);	 // two 16-bit timers, auto limit, use  the HIGHCOUNTER FOR LASER, (use lowcounter for pencilservo)
+	LPC_SCT0->CTRL_H |= (72 - 1) << 21; 	// set prescaler highcounter, SCTimer/PWM clock == 72mhz / 72 == 1mhz
+	LPC_SCT0->MATCHREL[0].H = 255 - 1; 	//sct0 highcounter  freq
+	LPC_SCT0->MATCHREL[1].H = 0; 	// sct0 highcounter pulsewidth laser
+	Chip_SWM_MovablePortPinAssign(SWM_SCT0_OUT1_O, 0, 12);  //set laserpin to sct0 output1
+
+	/*configure events, freq event for laser, and pulsewidthmatch event for laser*/
+	LPC_SCT0->EVENT[2].STATE = 0xFFFFFFFF; //all states allowed event2, use for freqmatch
+	LPC_SCT0->EVENT[3].STATE = 0xFFFFFFFF; //all states allowed event3, use for pulsewidthmatch
+
+	LPC_SCT0->EVENT[2].CTRL = (1<<4) |(1<<12)  ; 	//event2 sct0 highcounter frequency match, select reg0 (matchrel[0].h)
+	LPC_SCT0->EVENT[3].CTRL = (1<<4) | (1<<12) | (1); 	//event3 sct0 highcounter pulsewidthmatch, HEVENTbitTrue,  select reg1 (matchrel[1].h)
+
+	/*set outputs with freq events*/
+	LPC_SCT0->OUT[1].SET = (1<<2); //event2 sets sct0output1
+
+	/*clears outputs with pulsewidthmatch events*/
+	LPC_SCT0->OUT[1].CLR = 	1<<3;	//event3 clears sct0output1
+
+	/*unhalt timers*/
+	LPC_SCT0->CTRL_H &= ~(1<<2);  //unhalt sct0 highcounter
+}
+
+/*LASER SET NEW VALUE, using SCTimer0Large highcounter*/
+void setLaserValue(int amount){
+	bool allowed = (amount >= 0) &&  (amount <= 255);
+
+
+	/*put the amount [0,255] directly into laser pulsewidthmatch register, after it was legally within range*/
+	if(allowed){
+		LPC_SCT0->MATCHREL[1].H = amount;
+	}
+
+}
+
 
 
 
@@ -954,7 +1009,6 @@ static void execute_task(void*pvParameters) {
 
 	vTaskDelay(100);
 
-
 /*execute_task mainloop is conditional based on the status of limitStatusOK, which
  * can change, during regualar operations, only inside RIT_isr (you could push
  *  the limitswitch with your finger, but then motor will not be "the limithitting part")
@@ -975,9 +1029,7 @@ static void execute_task(void*pvParameters) {
 			 * you must use mDraw imagesize == keijosimulator imagesize, for the real_calibration_task
 			 * to properly count the steps and calibrate the simulator and scale the image.
 			 *
-			 * */
-
-			/* how to plot from Gcode millimetres into plotter steps - the PlottingProcedure
+			 * how to plot from Gcode millimetres into plotter steps - the PlottingProcedure
 			 *
 			 * 1.) convert int hundredthsXCoordMillimetre into double millimetres
 			 * 2.)  multiply double millimetres  with double XfullstepsPerMillimetre (the latter came from real_calibration_task)
@@ -993,16 +1045,14 @@ static void execute_task(void*pvParameters) {
 
 #ifndef useLoopingBresenham //ritInterrupt-Driven Bresenham
 			refactored_BresenhamInterruptAlgorithm(g_curX, g_curY, roundX,roundY );
-			g_curX = roundX;//update current coords to the "dest coords, after move"
-			g_curY = roundY;
+//			g_curX = roundX;//update current coords to the "dest coords, after move"
+//			g_curY = roundY;
 			USB_send((uint8_t*) okMessage, oklen);
 #endif
 #ifdef useLoopingBresenham //forlooping Bresenham
 			plotLineGeneral(g_curX, g_curY, roundX,roundY);
-			/*UPDATE GLOBAL COORDS, ASSUME ALGORITHM WORKED AND SET CURCOORDS=ENDCOORDS
-			 * seems to work, in example test_draw_tasks */
-			g_curX = roundX;
-			g_curY = roundY;
+//			g_curX = roundX;
+//			g_curY = roundY;
 			USB_send((uint8_t*) okMessage, oklen);
 #endif
 
@@ -1049,24 +1099,28 @@ static void execute_task(void*pvParameters) {
 			else{
 #ifndef useLoopingBresenham  	//use ritInterrupt-Driven Bresenham, for G28 move
 				refactored_BresenhamInterruptAlgorithm(g_curX, g_curY, g_OriginX, g_OriginY ); 	//goto origin, from curCoords
-				g_curX = g_OriginX; 	//update current coords to the "dest coords, after move"
-				g_curY = g_OriginY;
+//				g_curX = g_OriginX; 	//update current coords to the "dest coords, after move"
+//				g_curY = g_OriginY;
 				USB_send((uint8_t*) okMessage, oklen);
 #endif
 #ifdef useLoopingBresenham 	//use forlooping Bresenham, for G28 move
 				plotLineGeneral(g_curX, g_curY, g_OriginX, g_OriginY);
-				g_curX = g_OriginX;
-				g_curY = g_OriginY;
+//				g_curX = g_OriginX;
+//				g_curY = g_OriginY;
 				USB_send((uint8_t*) okMessage, oklen);
 #endif
 			}
 		}
 
-		/*process M4 (lasercommand) AND M28_start_stepper_calibration DONT ALLOW THESE COMMANDS ANYMORE at this stage*/
-		else if(curcmd.commandWord == CommandStruct::M4 || curcmd.commandWord == CommandStruct::M28){
-			//send nak_message (notAcknowledge_wasIllegalCommand)
-			USB_send((uint8_t*) badMessage, badlen);
+#ifdef useLaser
+				/*process M4 (lasercommand) */
+		else if(curcmd.commandWord == CommandStruct::M4 ){
+			setLaserValue(curcmd.commandNumber);
+			USB_send((uint8_t*) okMessage, oklen);
+			//vTaskDelay(100); 	//NO DELAY NECESSARY WITH LASERCOMMAND! laser is fast, unlike servo!
 		}
+#endif
+
 		else{
 			//send nak_message (notAcknowledge_wasIllegalCommand)
 			USB_send((uint8_t*) badMessage, badlen);
@@ -1113,12 +1167,11 @@ static void parse_task(void*pvParameters) {
 		str[len] = 0; 	// make sure we have a zero at the end so that we can print the data
 		cppstring += std::string(str); 	//append strbuffer into the "oldcppstring"
 		auto enterInd = cppstring.find('\n', 0); 	//find enterIndex
-		//vTaskDelay(5); //vtaskdelay is used for purpose of itmprint not bugging-out
+		vTaskDelay(5); //vtaskdelay is used for purpose of itmprint not bugging-out
 
 		if (enterInd != std::string::npos) {
 			gcode = cppstring.substr(0, enterInd);//found entersign, get one line of gcode
 			cppstring.erase(0, enterInd + 1);//erase the gotten gcodeline, from the cppstring front portion, BECAUSE WE PROCESSED IT ALREADY ==>sent to parser
-
 			CommandStruct cmd = parser.parseCommand(gcode);	//send the gcode string into the parser
 
 			if (cmd.isLegal && cmd.commandWord != CommandStruct::uninitialized) {
@@ -1302,6 +1355,14 @@ static void real_calibrate_task(void*pvParameters){
 				USB_send((uint8_t*) stepperCalibrationBegins, calibrationLength);
 				isCalibratingServo = false; //BREAKS FROM LOOP, start stepper calibrations
 			}
+#ifdef useLaser
+			/*deal with M4 lasercommand*/
+			else if(calibrationcmd.commandWord == CommandStruct::M4 && calibrationcmd.isLegal){
+				setLaserValue(calibrationcmd.commandNumber); //set new laservalue
+				USB_send((uint8_t*) okMessage, oklen);
+			}
+#endif
+
 			/*deal with illegal commands during calibration phase*/ /*NOTE! SEEMS TO WORK WHEN DEBUGGING! :)*/
 			else {
 				USB_send((uint8_t*) badMessage, badLength);
@@ -1381,7 +1442,7 @@ static void real_calibrate_task(void*pvParameters){
 	//then move to the expected Ymin
 	while(yTouches < 2){
 		limit1detected = limitYMax.read(); 	// dont expect to get limit1 again!, we just hit it earlier!
-		limit2detected = limitYMin.read(); // DO EXPECT to find Ymin among the three remaining booleans at next contact
+		limit2detected = limitYMin.read(); 	// DO EXPECT to find Ymin among the three remaining booleans at next contact
 		limit3detected = limitXMax.read();
 		limit4detected = limitXMin.read();
 		if( limit1detected && limit2detected && limit3detected && limit4detected ){ 	//allLimitsOpen, keep moving towards Ymin direction
@@ -1535,8 +1596,8 @@ static void real_calibrate_task(void*pvParameters){
   *
   * NOTE! both ratios are expected to be equal of course!!!
   * */
- 	 g_xFullstepsPerMM = (double)xsteps / (double)savedplottersettings.getWidth();
- 	 g_yFullstepsPerMM = (double)ysteps / (double)savedplottersettings.getHeight();
+ 	 g_xFullstepsPerMM = (double)xsteps / (double)savedplottersettings.getHeight();
+ 	 g_yFullstepsPerMM = (double)ysteps / (double)savedplottersettings.getWidth();
 	vTaskDelay(1000);
 
 	/*set eventbit0 true
@@ -1717,6 +1778,10 @@ int main(void) {
 	Chip_RIT_Init(LPC_RITIMER);// initialize RIT (= enable clocking etc.)
 	Chip_SCT_Init(LPC_SCT0);//init SCtimer0Large
 	setupPenServo();//init servo pwm into center pos for the servo
+#ifdef useLaser
+		setupLaser(); //init laser pwm, with zero value for laser (turnedOFF)
+#endif
+
 
 	// set the priority level of the interrupt
 	// The level must be equal or lower than the maximum priority specified in FreeRTOS config

@@ -36,11 +36,11 @@ public:
 	 * THE REASON, is because real_calibration_task will perform swap-by-value of DigitalIoPin limitpointer objects
 	 * */
 	PlotterSettings(
-			int newpenup = 160,
-			int newpendown = 90,
+			int newpenup = 5,
+			int newpendown = 180,
 			bool newXclockwise=true,
 			bool newYclockwise = true,
-			int newheight = 380,
+			int newheight = 350,
 			int newwidth = 310,
 			int newspeed = 80,
 			DigitalIoPin *l1 = NULL,
