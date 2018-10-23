@@ -233,6 +233,8 @@ void RIT_IRQHandler(void) { //THIS VERSION IS FOR RITinterruptBresenham
 	} else { // "iterate bresenham" has ended, prepare to reset variables and stop interrupt
 		pulseState = true; //prepare pulsestate for next G1command
 		expectm2 = false; //reset boolean in preparation for the beginning of next G1 command, so it will be false in beginning of ritstart
+		stepXP->write(false);
+		stepYP->write(false);
 		RIT_count = 0; //reset RIT_count also, probably not needed though, because ritstart sets it up again
 		Chip_RIT_Disable(LPC_RITIMER); // disable timer
 		// Give semaphore and set context switch flag if a higher priority task was woken up
@@ -312,6 +314,8 @@ void RIT_IRQHandler(void) {
 			}
 		} else {
 			pulseState=true;
+			stepXP->write(false);
+			stepYP->write(false);
 			Chip_RIT_Disable(LPC_RITIMER); // disable timer
 			// Give semaphore and set context switch flag if a higher priority task was woken up
 			xSemaphoreGiveFromISR(sbRIT, &xHigherPriorityWoken);
@@ -1066,7 +1070,6 @@ static void execute_task(void*pvParameters) {
 			/*NOTE!
 			 * you must use mDraw imagesize == keijosimulator imagesize, for the real_calibration_task
 			 * to properly count the steps and calibrate the simulator and scale the image.
-			 *
 			 * */
 
 			/* how to plot from Gcode millimetres into plotter steps - the PlottingProcedure
@@ -1208,7 +1211,6 @@ static void parse_task(void*pvParameters) {
 		str[len] = 0; 	// make sure we have a zero at the end so that we can print the data
 		cppstring += std::string(str); 	//append strbuffer into the "oldcppstring"
 		auto enterInd = cppstring.find('\n', 0); 	//find enterIndex
-		//vTaskDelay(5); //vtaskdelay is used for purpose of itmprint not bugging-out
 
 		if (enterInd != std::string::npos) {
 			gcode = cppstring.substr(0, enterInd);//found entersign, get one line of gcode
