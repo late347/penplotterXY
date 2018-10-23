@@ -46,7 +46,7 @@
 /*CONDITINAL COMPILATION OPTIONS****************************/
 
 //#define useLoopingBresenham	 // NOTE! this option chooses if you want to use RIT_interrupt-driven Bresenham algorithm, OR forlooping Bresenham algorithm
-
+#define logicAnalyzerTest
 
 /*options and variables when using RITinterruptBresingham*/
  //variables for RITinterruptBresingham
@@ -101,7 +101,6 @@ volatile std::atomic<int> g_OriginY(0);
 const int g_STEPS_FROM_EDGE(360); //keeps the origin for G28 in a safely calibrated place, so doesn't hit the limits exactly when goes to (0,0) point
 volatile double g_xFullstepsPerMM; //double fullstepsPerMillimetre ratio
 volatile double g_yFullstepsPerMM;
-/*global variables ends*/
 
 
 //NOTE!! THESE GLOBAL POINTERS ARE NECESSARY!
@@ -115,7 +114,6 @@ DigitalIoPin *stepYP;
 DigitalIoPin *dirYP;
 DigitalIoPin *laserP;
 DigitalIoPin *penP;
-//GlobalPointers End here
 
 
 
@@ -288,7 +286,7 @@ void RIT_IRQHandler(void) {
 					stepYP->write(pulseState);
 					if (isEven) {
 						switch(m2parameter){
-						case 2: g_curX++, g_curY++; break;
+						case 2: g_curX++; g_curY++; break;
 						case 4: g_curX--; g_curY++; break;
 						case 6: g_curX--; g_curY--; break;
 						case 8: g_curX++; g_curY--; break;
@@ -1088,7 +1086,7 @@ static void execute_task(void*pvParameters) {
 
 #ifndef useLoopingBresenham //ritInterrupt-Driven Bresenham
 			refactored_BresenhamInterruptAlgorithm(g_curX, g_curY, roundX,roundY );
-			vTaskDelay(5);
+			vTaskDelay(2);
 
 //			g_curX = roundX;//update current coords to the "dest coords, after move"
 //			g_curY = roundY;
@@ -1096,7 +1094,7 @@ static void execute_task(void*pvParameters) {
 #endif
 #ifdef useLoopingBresenham //forlooping Bresenham
 			plotLineGeneral(g_curX, g_curY, roundX,roundY);
-			vTaskDelay(5);
+			vTaskDelay(2);
 			/*UPDATE GLOBAL COORDS, ASSUME ALGORITHM WORKED AND SET CURCOORDS=ENDCOORDS
 			 * seems to work, in example test_draw_tasks */
 //			g_curX = roundX;
@@ -1649,6 +1647,65 @@ static void real_calibrate_task(void*pvParameters){
 
 
 
+static void logic_test_initialize_task(void*pvParameters){
+		//laser and pen pins, hopefully correct???
+		DigitalIoPin pen(0,10, DigitalIoPin::pullup, true);
+		DigitalIoPin laser(0,12,DigitalIoPin::output, true);
+		//drive laserpin low
+		laser.write(false);
+		laserP = &laser;
+		//regular pin setup, as per pdf pin layout guide!!!
+		DigitalIoPin dirX(0, 28, DigitalIoPin::output, true);
+		DigitalIoPin dirY(1, 0, DigitalIoPin::output, true);
+		DigitalIoPin stepY(0, 24, DigitalIoPin::output, true);
+		DigitalIoPin stepX(0, 27, DigitalIoPin::output, true);
+		DigitalIoPin limitYMin(1, 3, DigitalIoPin::pullup, false);
+		DigitalIoPin limitYMax(0, 0, DigitalIoPin::pullup, false);
+		DigitalIoPin limitXMax(0, 9, DigitalIoPin::pullup, false);
+		DigitalIoPin limitXMin(0, 29, DigitalIoPin::pullup, false);
+		//assign global pointers
+		limitYMinP = &limitYMin;
+		limitYMaxP = &limitYMax;
+		limitXMinP = &limitXMin;
+		limitXMaxP = &limitXMax;
+		//step, dir and pen pointers should remain same always
+		stepXP = &stepX;
+		dirXP = &dirX;
+		stepYP = &stepY;
+		dirYP = &dirY;
+		penP = &pen;
+
+		vTaskDelay(100);
+		/*set eventbit0 true
+		 * WAKES UP OTHER TASKS to prepare for mdraw commands*/
+		xEventGroupSetBits(eventGroup, 0x1);
+		vTaskSuspend( NULL);
+
+}
+
+static void logic_test_rit_bresenham_task(void*pvParameters){
+
+	xEventGroupWaitBits(eventGroup, 0x1, pdFALSE, pdFALSE, portMAX_DELAY);	//wait until real_calibration_task finishes!
+
+
+	vTaskDelay(10);
+
+		refactored_BresenhamInterruptAlgorithm(g_curX, g_curY, g_curX+2000, g_curY); //right
+		vTaskDelay(2);
+		refactored_BresenhamInterruptAlgorithm(g_curX, g_curY, g_curX, g_curY+2000); //up
+		vTaskDelay(2);
+		refactored_BresenhamInterruptAlgorithm(g_curX, g_curY, g_curX-2000, g_curY); //left
+		vTaskDelay(2);
+		refactored_BresenhamInterruptAlgorithm(g_curX, g_curY, g_curX, g_curY-2000); //down
+		vTaskDelay(2);
+		refactored_BresenhamInterruptAlgorithm(g_curX, g_curY, g_curX+2000, g_curY+2000); //45deg angle
+		vTaskDelay(2);
+		refactored_BresenhamInterruptAlgorithm(g_curX, g_curY, g_curX+500, g_curY+300);//30.964deg angle
+		vTaskDelay(2);
+		refactored_BresenhamInterruptAlgorithm(g_curX, g_curY, g_curX-500, g_curY-300);//-30.964deg angle
+		vTaskDelay(2);
+		refactored_BresenhamInterruptAlgorithm(g_curX, g_curY, g_curX+300, g_curY+500);//59,036deg angle
+}
 /*here are testing tasks for bresenham plotting, to verify the algorithms in plottersimulator*/
 static void testdraw_isr_bresenham_task(void*pvParameters){
 	vTaskDelay(500);
@@ -1834,7 +1891,7 @@ int main(void) {
 	vQueueAddToRegistry(commandQueue, "comQueue");
 	vQueueAddToRegistry(sbRIT, "sbRIT");
 
-
+#ifndef logicAnalyzerTest
 	/* usb parser mdraw commands thread */
 	xTaskCreate(parse_task, "parse_task",
 			configMINIMAL_STACK_SIZE * 6, NULL, (tskIDLE_PRIORITY + 1UL),
@@ -1866,7 +1923,17 @@ int main(void) {
 	xTaskCreate(real_calibrate_task, "real_calibrate_task",
 			configMINIMAL_STACK_SIZE * 6, NULL, (tskIDLE_PRIORITY + 1UL),
 			(TaskHandle_t *) NULL);
+#endif
 
+#ifdef logicAnalyzerTest
+	xTaskCreate(logic_test_rit_bresenham_task, "logic_test_rit_bresenham_task",
+			configMINIMAL_STACK_SIZE * 4, NULL, (tskIDLE_PRIORITY + 1UL),
+			(TaskHandle_t *) NULL);
+
+	xTaskCreate(logic_test_initialize_task, "logic_test_initialize_task",
+			configMINIMAL_STACK_SIZE * 4, NULL, (tskIDLE_PRIORITY + 1UL),
+			(TaskHandle_t *) NULL);
+#endif
 
 	/* cdc thread */
 	xTaskCreate(cdc_task, "CDC",
