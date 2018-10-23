@@ -11622,7 +11622,7 @@ OUTPUT(usb_cdc.axf elf32-littlearm)
  .debug_macro   0x0000fe9b      0x260 C:\Users\Lauri\Documents\MCUXpressoIDE_10.2.1_795\workspace\GcodePlotterNEWESTWorkspace\lpc_chip_15xx\Debug\liblpc_chip_15xx.a(sysinit_15xx.o)
  .debug_macro   0x000100fb      0x260 C:\Users\Lauri\Documents\MCUXpressoIDE_10.2.1_795\workspace\GcodePlotterNEWESTWorkspace\lpc_chip_15xx\Debug\liblpc_chip_15xx.a(uart_15xx.o)
 
-.debug_line     0x00000000    0x11016
+.debug_line     0x00000000    0x11014
  .debug_line    0x00000000      0x655 ./src/DigitalIoPin.o
  .debug_line    0x00000655     0x1392 ./src/GcodeParser.o
  .debug_line    0x000019e7      0x5cb ./src/ITM_write.o
@@ -11633,29 +11633,29 @@ OUTPUT(usb_cdc.axf elf32-littlearm)
  .debug_line    0x00004546      0x3e2 ./src/cr_cpp_config.o
  .debug_line    0x00004928       0xd5 ./src/cr_startup_lpc15xx.o
  .debug_line    0x000049fd      0x6cf ./src/sysinit.o
- .debug_line    0x000050cc     0x1ee4 ./src/usb_cdc.o
- .debug_line    0x00006fb0      0xa6d C:\Users\Lauri\Documents\MCUXpressoIDE_10.2.1_795\workspace\GcodePlotterNEWESTWorkspace\FreeRTOS\Debug\libfreertos.a(event_groups.o)
- .debug_line    0x00007a1d      0x93f C:\Users\Lauri\Documents\MCUXpressoIDE_10.2.1_795\workspace\GcodePlotterNEWESTWorkspace\FreeRTOS\Debug\libfreertos.a(list.o)
- .debug_line    0x0000835c      0xe28 C:\Users\Lauri\Documents\MCUXpressoIDE_10.2.1_795\workspace\GcodePlotterNEWESTWorkspace\FreeRTOS\Debug\libfreertos.a(queue.o)
- .debug_line    0x00009184     0x135a C:\Users\Lauri\Documents\MCUXpressoIDE_10.2.1_795\workspace\GcodePlotterNEWESTWorkspace\FreeRTOS\Debug\libfreertos.a(tasks.o)
- .debug_line    0x0000a4de      0x903 C:\Users\Lauri\Documents\MCUXpressoIDE_10.2.1_795\workspace\GcodePlotterNEWESTWorkspace\FreeRTOS\Debug\libfreertos.a(heap_3.o)
- .debug_line    0x0000ade1      0x9dd C:\Users\Lauri\Documents\MCUXpressoIDE_10.2.1_795\workspace\GcodePlotterNEWESTWorkspace\FreeRTOS\Debug\libfreertos.a(port.o)
- .debug_line    0x0000b7be      0x94a C:\Users\Lauri\Documents\MCUXpressoIDE_10.2.1_795\workspace\GcodePlotterNEWESTWorkspace\FreeRTOS\Debug\libfreertos.a(FreeRTOSCommonHooks.o)
- .debug_line    0x0000c108      0x90e C:\Users\Lauri\Documents\MCUXpressoIDE_10.2.1_795\workspace\GcodePlotterNEWESTWorkspace\lpc_board_nxp_lpcxpresso_1549\Debug\liblpc_board_nxp_lpcxpresso_1549.a(board.o)
- .debug_line    0x0000ca16      0x7e2 C:\Users\Lauri\Documents\MCUXpressoIDE_10.2.1_795\workspace\GcodePlotterNEWESTWorkspace\lpc_board_nxp_lpcxpresso_1549\Debug\liblpc_board_nxp_lpcxpresso_1549.a(board_sysinit.o)
- .debug_line    0x0000d1f8      0x59e C:\Users\Lauri\Documents\MCUXpressoIDE_10.2.1_795\workspace\GcodePlotterNEWESTWorkspace\lpc_chip_15xx\Debug\liblpc_chip_15xx.a(chip_15xx.o)
- .debug_line    0x0000d796      0x7f2 C:\Users\Lauri\Documents\MCUXpressoIDE_10.2.1_795\workspace\GcodePlotterNEWESTWorkspace\lpc_chip_15xx\Debug\liblpc_chip_15xx.a(clock_15xx.o)
- .debug_line    0x0000df88      0x5f6 C:\Users\Lauri\Documents\MCUXpressoIDE_10.2.1_795\workspace\GcodePlotterNEWESTWorkspace\lpc_chip_15xx\Debug\liblpc_chip_15xx.a(gpio_15xx.o)
- .debug_line    0x0000e57e      0x53e C:\Users\Lauri\Documents\MCUXpressoIDE_10.2.1_795\workspace\GcodePlotterNEWESTWorkspace\lpc_chip_15xx\Debug\liblpc_chip_15xx.a(iocon_15xx.o)
- .debug_line    0x0000eabc      0x61e C:\Users\Lauri\Documents\MCUXpressoIDE_10.2.1_795\workspace\GcodePlotterNEWESTWorkspace\lpc_chip_15xx\Debug\liblpc_chip_15xx.a(ritimer_15xx.o)
- .debug_line    0x0000f0da      0x597 C:\Users\Lauri\Documents\MCUXpressoIDE_10.2.1_795\workspace\GcodePlotterNEWESTWorkspace\lpc_chip_15xx\Debug\liblpc_chip_15xx.a(sct_15xx.o)
- .debug_line    0x0000f671      0x569 C:\Users\Lauri\Documents\MCUXpressoIDE_10.2.1_795\workspace\GcodePlotterNEWESTWorkspace\lpc_chip_15xx\Debug\liblpc_chip_15xx.a(swm_15xx.o)
- .debug_line    0x0000fbda      0x5a0 C:\Users\Lauri\Documents\MCUXpressoIDE_10.2.1_795\workspace\GcodePlotterNEWESTWorkspace\lpc_chip_15xx\Debug\liblpc_chip_15xx.a(sysctl_15xx.o)
- .debug_line    0x0001017a      0x5d3 C:\Users\Lauri\Documents\MCUXpressoIDE_10.2.1_795\workspace\GcodePlotterNEWESTWorkspace\lpc_chip_15xx\Debug\liblpc_chip_15xx.a(sysinit_15xx.o)
- .debug_line    0x0001074d      0x718 C:\Users\Lauri\Documents\MCUXpressoIDE_10.2.1_795\workspace\GcodePlotterNEWESTWorkspace\lpc_chip_15xx\Debug\liblpc_chip_15xx.a(uart_15xx.o)
- .debug_line    0x00010e65      0x125 c:/nxp/mcuxpressoide_10.2.1_795/ide/tools/bin/../lib/gcc/arm-none-eabi/7.2.1/../../../../arm-none-eabi/lib/thumb/v7-m\libcr_newlib_nohost.a(_cr_sbrk.o)
- .debug_line    0x00010f8a       0x3f c:/nxp/mcuxpressoide_10.2.1_795/ide/tools/bin/../lib/gcc/arm-none-eabi/7.2.1/../../../../arm-none-eabi/lib/thumb/v7-m\libcr_newlib_nohost.a(cr_abort.o)
- .debug_line    0x00010fc9       0x4d c:/nxp/mcuxpressoide_10.2.1_795/ide/tools/bin/../lib/gcc/arm-none-eabi/7.2.1/../../../../arm-none-eabi/lib/thumb/v7-m\libcr_newlib_nohost.a(_cr_check_heap.o)
+ .debug_line    0x000050cc     0x1ee2 ./src/usb_cdc.o
+ .debug_line    0x00006fae      0xa6d C:\Users\Lauri\Documents\MCUXpressoIDE_10.2.1_795\workspace\GcodePlotterNEWESTWorkspace\FreeRTOS\Debug\libfreertos.a(event_groups.o)
+ .debug_line    0x00007a1b      0x93f C:\Users\Lauri\Documents\MCUXpressoIDE_10.2.1_795\workspace\GcodePlotterNEWESTWorkspace\FreeRTOS\Debug\libfreertos.a(list.o)
+ .debug_line    0x0000835a      0xe28 C:\Users\Lauri\Documents\MCUXpressoIDE_10.2.1_795\workspace\GcodePlotterNEWESTWorkspace\FreeRTOS\Debug\libfreertos.a(queue.o)
+ .debug_line    0x00009182     0x135a C:\Users\Lauri\Documents\MCUXpressoIDE_10.2.1_795\workspace\GcodePlotterNEWESTWorkspace\FreeRTOS\Debug\libfreertos.a(tasks.o)
+ .debug_line    0x0000a4dc      0x903 C:\Users\Lauri\Documents\MCUXpressoIDE_10.2.1_795\workspace\GcodePlotterNEWESTWorkspace\FreeRTOS\Debug\libfreertos.a(heap_3.o)
+ .debug_line    0x0000addf      0x9dd C:\Users\Lauri\Documents\MCUXpressoIDE_10.2.1_795\workspace\GcodePlotterNEWESTWorkspace\FreeRTOS\Debug\libfreertos.a(port.o)
+ .debug_line    0x0000b7bc      0x94a C:\Users\Lauri\Documents\MCUXpressoIDE_10.2.1_795\workspace\GcodePlotterNEWESTWorkspace\FreeRTOS\Debug\libfreertos.a(FreeRTOSCommonHooks.o)
+ .debug_line    0x0000c106      0x90e C:\Users\Lauri\Documents\MCUXpressoIDE_10.2.1_795\workspace\GcodePlotterNEWESTWorkspace\lpc_board_nxp_lpcxpresso_1549\Debug\liblpc_board_nxp_lpcxpresso_1549.a(board.o)
+ .debug_line    0x0000ca14      0x7e2 C:\Users\Lauri\Documents\MCUXpressoIDE_10.2.1_795\workspace\GcodePlotterNEWESTWorkspace\lpc_board_nxp_lpcxpresso_1549\Debug\liblpc_board_nxp_lpcxpresso_1549.a(board_sysinit.o)
+ .debug_line    0x0000d1f6      0x59e C:\Users\Lauri\Documents\MCUXpressoIDE_10.2.1_795\workspace\GcodePlotterNEWESTWorkspace\lpc_chip_15xx\Debug\liblpc_chip_15xx.a(chip_15xx.o)
+ .debug_line    0x0000d794      0x7f2 C:\Users\Lauri\Documents\MCUXpressoIDE_10.2.1_795\workspace\GcodePlotterNEWESTWorkspace\lpc_chip_15xx\Debug\liblpc_chip_15xx.a(clock_15xx.o)
+ .debug_line    0x0000df86      0x5f6 C:\Users\Lauri\Documents\MCUXpressoIDE_10.2.1_795\workspace\GcodePlotterNEWESTWorkspace\lpc_chip_15xx\Debug\liblpc_chip_15xx.a(gpio_15xx.o)
+ .debug_line    0x0000e57c      0x53e C:\Users\Lauri\Documents\MCUXpressoIDE_10.2.1_795\workspace\GcodePlotterNEWESTWorkspace\lpc_chip_15xx\Debug\liblpc_chip_15xx.a(iocon_15xx.o)
+ .debug_line    0x0000eaba      0x61e C:\Users\Lauri\Documents\MCUXpressoIDE_10.2.1_795\workspace\GcodePlotterNEWESTWorkspace\lpc_chip_15xx\Debug\liblpc_chip_15xx.a(ritimer_15xx.o)
+ .debug_line    0x0000f0d8      0x597 C:\Users\Lauri\Documents\MCUXpressoIDE_10.2.1_795\workspace\GcodePlotterNEWESTWorkspace\lpc_chip_15xx\Debug\liblpc_chip_15xx.a(sct_15xx.o)
+ .debug_line    0x0000f66f      0x569 C:\Users\Lauri\Documents\MCUXpressoIDE_10.2.1_795\workspace\GcodePlotterNEWESTWorkspace\lpc_chip_15xx\Debug\liblpc_chip_15xx.a(swm_15xx.o)
+ .debug_line    0x0000fbd8      0x5a0 C:\Users\Lauri\Documents\MCUXpressoIDE_10.2.1_795\workspace\GcodePlotterNEWESTWorkspace\lpc_chip_15xx\Debug\liblpc_chip_15xx.a(sysctl_15xx.o)
+ .debug_line    0x00010178      0x5d3 C:\Users\Lauri\Documents\MCUXpressoIDE_10.2.1_795\workspace\GcodePlotterNEWESTWorkspace\lpc_chip_15xx\Debug\liblpc_chip_15xx.a(sysinit_15xx.o)
+ .debug_line    0x0001074b      0x718 C:\Users\Lauri\Documents\MCUXpressoIDE_10.2.1_795\workspace\GcodePlotterNEWESTWorkspace\lpc_chip_15xx\Debug\liblpc_chip_15xx.a(uart_15xx.o)
+ .debug_line    0x00010e63      0x125 c:/nxp/mcuxpressoide_10.2.1_795/ide/tools/bin/../lib/gcc/arm-none-eabi/7.2.1/../../../../arm-none-eabi/lib/thumb/v7-m\libcr_newlib_nohost.a(_cr_sbrk.o)
+ .debug_line    0x00010f88       0x3f c:/nxp/mcuxpressoide_10.2.1_795/ide/tools/bin/../lib/gcc/arm-none-eabi/7.2.1/../../../../arm-none-eabi/lib/thumb/v7-m\libcr_newlib_nohost.a(cr_abort.o)
+ .debug_line    0x00010fc7       0x4d c:/nxp/mcuxpressoide_10.2.1_795/ide/tools/bin/../lib/gcc/arm-none-eabi/7.2.1/../../../../arm-none-eabi/lib/thumb/v7-m\libcr_newlib_nohost.a(_cr_check_heap.o)
 
 .debug_str      0x00000000    0x3c08b
  .debug_str     0x00000000     0xf570 ./src/DigitalIoPin.o

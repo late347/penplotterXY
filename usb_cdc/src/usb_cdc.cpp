@@ -156,7 +156,6 @@ void RIT_IRQHandler(void) { //THIS VERSION IS FOR RITinterruptBresenham
 			 * When RIT_count is odd, => implies that current ISR round is basically
 			 * writing false cycle to the steppins, to complete any given fullstep*/
 			if (isEven) {
-
 				if (g_nabla >= 0) {
 					expectm2 = true;
 					g_nabla = g_nabla + 2 * g_dy - 2 * g_dx;
@@ -165,7 +164,6 @@ void RIT_IRQHandler(void) { //THIS VERSION IS FOR RITinterruptBresenham
 					g_nabla = g_nabla + 2 * g_dy;
 				}
 			}
-
 			/*prepare to halfpulse the m1pin
 			 * m1pin is notation based on Bresenhams original paper
 			 * the dirPins are already pre-computed before ISR
@@ -185,7 +183,6 @@ void RIT_IRQHandler(void) { //THIS VERSION IS FOR RITinterruptBresenham
 					case 7: g_curY--; break;
 					}
 				}
-
 			}
 			/*else perform  halfpulse m2pin for diagonal M2Move
 			 * only perform the necessary checks inside ISR,
@@ -208,7 +205,6 @@ void RIT_IRQHandler(void) { //THIS VERSION IS FOR RITinterruptBresenham
 					}
 				}
 			}
-
 			pulseState = !pulseState;
 			RIT_count--;
 			if(RIT_count == 0){
@@ -266,7 +262,6 @@ void RIT_IRQHandler(void) {
 			RIT_count--;
 			// do something useful here...
 			limitStatusOK = (  limitYMinP->read() && limitYMaxP->read() && limitXMaxP->read() && limitXMinP->read()  );
-
 			if (limitStatusOK) {
 				if(executeM1orM2==1) { //execute M1 pattern move
 					switch(m1parameter) { //actuate only one motor straight move
