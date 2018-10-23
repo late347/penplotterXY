@@ -142,7 +142,7 @@ void RIT_IRQHandler(void) { //THIS VERSION IS FOR RITinterruptBresenham
 	// Tell timer that we have processed the interrupt.
 	// Timer then removes the IRQ until next match occurs
 	Chip_RIT_ClearIntStatus(LPC_RITIMER);	// clear IRQ flag
-
+int kakka=1;
 	static std::atomic<bool> expectm2(false); //boolean keeps track if you are writing to m1Pin or m2Pin in a particular halfpulse
 	if (RIT_count > 0) { //regular case, "iterate bresenham algorithm" inside interrupt handler
 		/*WHEN LIMIT READS TRUE => LIMIT SHOUILD BE OPEN I.E. NOT-DEPRESSED BUTTON*/
