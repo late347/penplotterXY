@@ -154,9 +154,9 @@ std::string PlotterSettings::getM11LimitResponseMessage(){
 std::string PlotterSettings::getM10ResponseMessage(){
 	/*format the M10 replymessage based on saved plottersettings*/
 	std::string response="M10 XY ";
-	response += std::to_string(height);
-	response += " ";
 	response += std::to_string(width);
+	response += " ";
+	response += std::to_string(height);
 	response += " 0.00 0.00 ";
 
 	if(xMotorClockwise)
