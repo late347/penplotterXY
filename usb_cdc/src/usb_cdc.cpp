@@ -260,7 +260,7 @@ void RIT_IRQHandler(void) {
 
 
 		if (RIT_count > 0) {
-			isEven= RIT_count % 2 == 0;
+			isEven= (RIT_count % 2 == 0);
 			RIT_count--;
 			// do something useful here...
 			limitStatusOK = (  limitYMinP->read() && limitYMaxP->read() && limitXMaxP->read() && limitXMinP->read()  );
