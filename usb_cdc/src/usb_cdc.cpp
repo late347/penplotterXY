@@ -52,8 +52,8 @@
 /*options and variables when using RITinterruptBresingham*/
  //variables for RITinterruptBresingham
 
-volatile int g_dx, g_dy, g_nabla;
-int g_x_1, g_x_0, g_y_1, g_y_0;
+volatile std::atomic<int> g_dx, g_dy, g_nabla;
+volatile std::atomic<int> g_x_1, g_x_0, g_y_1, g_y_0;
 
 
 /*********************************************************/
@@ -81,8 +81,8 @@ volatile std::atomic<int> executeM1orM2(0); //check 1 or 2 inside isr to decide 
 
 
 //These global variables are shared usage between either case of conditional compilation Interrupt Handlers...
-volatile int m1parameter = 0;//  determine which pin is driven into which direction, straight motorMove horiz OR vert
-volatile int m2parameter = 0;//   determine which two pins are driven into which direction at the same time, diagonal motorMove
+volatile std::atomic<int> m1parameter(0);//  determine which pin is driven into which direction, straight motorMove horiz OR vert
+volatile std::atomic<int> m2parameter(0);//   determine which two pins are driven into which direction at the same time, diagonal motorMove
 const int ppsValue = 1000;	//arbitrary value for pps, it is more useful for RIT_interrupt-Driven Bresenham because it will affect the constant speed greatly (forlooping Bresenham only makes always 2 halfsteps with this ppsValue)
 volatile uint32_t RIT_count; //NOTE! this variable is used as amountOfHalfpulses which is double the amount of fullsteps, to drive either version of Bresenham
 static volatile std::atomic<bool> pulseState(true);//NOTE!! THIS VARIABLE IS NECESSARY for rit interrupt handlers! It is used for halfpulsing
@@ -95,10 +95,10 @@ PlotterSettings savedplottersettings; //global object keeps track of saveable an
 //REMEMBER TO UPDATE AFTER PLOTS!
 /*maybe not required to be volatile?
  * NOTE the units of g_curX, g_curY and g_originX and g_originY should be in units of fullsteps!*/
-volatile int g_curX(250);
-volatile int g_curY(250);
-volatile int g_OriginX(0);
-volatile int g_OriginY(0);
+volatile std::atomic<int> g_curX(250);
+volatile std::atomic<int> g_curY(250);
+volatile std::atomic<int> g_OriginX(0);
+volatile std::atomic<int> g_OriginY(0);
 const int g_STEPS_FROM_EDGE(360); //keeps the origin for G28 in a safely calibrated place, so doesn't hit the limits exactly when goes to (0,0) point
 volatile double g_xFullstepsPerMM; //double fullstepsPerMillimetre ratio
 volatile double g_yFullstepsPerMM;
@@ -143,13 +143,12 @@ void RIT_IRQHandler(void) { //THIS VERSION IS FOR RITinterruptBresenham
 	// Timer then removes the IRQ until next match occurs
 	Chip_RIT_ClearIntStatus(LPC_RITIMER);	// clear IRQ flag
 
-	static bool expectm2 = false; //boolean keeps track if you are writing to m1Pin or m2Pin in a particular halfpulse
-	//should never be nullpointers when starting ritstart
-
+	static std::atomic<bool> expectm2(false); //boolean keeps track if you are writing to m1Pin or m2Pin in a particular halfpulse
 	if (RIT_count > 0) { //regular case, "iterate bresenham algorithm" inside interrupt handler
 		/*WHEN LIMIT READS TRUE => LIMIT SHOUILD BE OPEN I.E. NOT-DEPRESSED BUTTON*/
-		limitStatusOK = (limitYMinP->read() && limitYMaxP->read() && limitXMaxP->read() && limitXMinP->read()); //check limits status inside ISR
-		isEven= RIT_count % 2 == 0;
+		limitStatusOK = (limitYMinP->read() && limitYMaxP->read()
+				&& limitXMaxP->read() && limitXMinP->read()); //check limits status inside ISR
+		isEven = (RIT_count % 2 == 0);
 		if (limitStatusOK) { //CALIBRATION MODE SHOULD NEVER USE RIT IRQ
 			/*at each fullstep, in the beginning,
 			 * use decisionparameter to iterate over bresenham
@@ -164,53 +163,58 @@ void RIT_IRQHandler(void) { //THIS VERSION IS FOR RITinterruptBresenham
 					g_nabla = g_nabla + 2 * g_dy;
 				}
 			}
-			/*prepare to halfpulse the m1pin
-			 * m1pin is notation based on Bresenhams original paper
-			 * the dirPins are already pre-computed before ISR
-			 * for each line plot, for each G1command, dirPins stay same
-			 * */
 			if (!expectm2) {
 				if (m1parameter == 1 || m1parameter == 5) {
 					stepXP->write(pulseState);
 				} else if (m1parameter == 3 || m1parameter == 7) {
 					stepYP->write(pulseState);
 				}
-				if(isEven){
+				if (isEven) {
 					switch (m1parameter) {
-					case 1: g_curX++; break;
-					case 5: g_curX--; break;
-					case 3: g_curY++; break;
-					case 7: g_curY--; break;
+					case 1:
+						g_curX++;
+						break;
+					case 5:
+						g_curX--;
+						break;
+					case 3:
+						g_curY++;
+						break;
+					case 7:
+						g_curY--;
+						break;
 					}
 				}
-			}
-			/*else perform  halfpulse m2pin for diagonal M2Move
-			 * only perform the necessary checks inside ISR,
-			 * rely on the setupBresenham to have correctly
-			 * configured dirPins before line plot
-			 * NOTE!!!
-			 *   expectm2 is static bool initialized at false, so that it keeps
-			 *   track of its own state after each ISR iterating round
-			 *   then, at the end of final halfpulse ISR iterating round, remember to reset expectm2 to false
-			 *   */
-			else {
+			}else {
 				stepYP->write(pulseState);
 				stepXP->write(pulseState);
 				if (isEven) {
-					switch(m2parameter){
-					case 2: g_curX++, g_curY++; break;
-					case 4: g_curX--; g_curY++; break;
-					case 6: g_curX--; g_curY--; break;
-					case 8: g_curX++; g_curY--; break;
+					switch (m2parameter) {
+					case 2:
+						g_curX++;
+						g_curY++;
+						break;
+					case 4:
+						g_curX--;
+						g_curY++;
+						break;
+					case 6:
+						g_curX--;
+						g_curY--;
+						break;
+					case 8:
+						g_curX++;
+						g_curY--;
+						break;
 					}
 				}
 			}
 			pulseState = !pulseState;
 			RIT_count--;
-			if(RIT_count == 0){
+			if (RIT_count == 0) {
 				pulseState = true; //prepare pulsestate for next G1command
 				expectm2 = false; //reset boolean in preparation for the beginning of next G1 command, so it will be false in beginning of ritstart
-				isEven=true;
+				isEven = true;
 				stepXP->write(false);
 				stepYP->write(false);
 				RIT_count = 0; //reset RIT_count also, probably not needed though, because ritstart sets it up again
@@ -617,7 +621,7 @@ void refactored_BresenhamInterruptAlgorithm(int x0, int y0, int x1, int y1){
 
 	//NOTE! always ritstart with EVEN numbers because by definition, you are halfpulsing the fullpulses
 	RIT_start( 2 * fullsteps,  ( 1000000 / (2*ppsValue) )    );
-	vTaskDelay(2);
+	vTaskDelay(5);
 
 }
 

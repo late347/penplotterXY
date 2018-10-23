@@ -352,8 +352,7 @@ bool GcodeParser::parseM2(CommandStruct &cmdRef){
 				 * otherwise everything gets fucked, hopefully even mDraw takes this into account...*/
 				bool paramsLegal =
 						(downParam >= 0 && downParam <= 255)  &&
-						(upParam >= 0 && upParam <= 255) &&
-						(upParam > downParam);
+						(upParam >= 0 && upParam <= 255);
 
 				if(paramsLegal){
 					/*modify the commandstruct to later allow the struct to be passed into
