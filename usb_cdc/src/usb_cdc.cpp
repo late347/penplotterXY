@@ -1154,9 +1154,9 @@ static void execute_task(void*pvParameters) {
 		}
 
 		/*process M4 (lasercommand) AND M28_start_stepper_calibration DONT ALLOW THESE COMMANDS ANYMORE at this stage*/
-		else if(curcmd.commandWord == CommandStruct::M4 || curcmd.commandWord == CommandStruct::M28){
-			//send nak_message (notAcknowledge_wasIllegalCommand)
-			USB_send((uint8_t*) badMessage, badlen);
+		else if(curcmd.commandWord == CommandStruct::M4 ){
+			setLaserValue(curcmd.commandNumber);
+			USB_send((uint8_t*) okMessage, oklen);
 		}
 		else{
 			//send nak_message (notAcknowledge_wasIllegalCommand)
