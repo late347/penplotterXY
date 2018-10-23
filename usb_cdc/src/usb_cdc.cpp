@@ -46,7 +46,7 @@
 /*CONDITINAL COMPILATION OPTIONS****************************/
 
 //#define useLoopingBresenham	 // NOTE! this option chooses if you want to use RIT_interrupt-driven Bresenham algorithm, OR forlooping Bresenham algorithm
-#define logicAnalyzerTest
+//#define logicAnalyzerTest
 
 /*options and variables when using RITinterruptBresingham*/
  //variables for RITinterruptBresingham
@@ -134,16 +134,12 @@ void vConfigureTimerForRunTimeStats( void ) {
 #ifndef useLoopingBresenham
 extern "C" {
 void RIT_IRQHandler(void) { //THIS VERSION IS FOR RITinterruptBresenham
-	// This used to check if a context switch is required
-	portBASE_TYPE xHigherPriorityWoken = pdFALSE;
-	// Tell timer that we have processed the interrupt.
-	// Timer then removes the IRQ until next match occurs
+
+	portBASE_TYPE xHigherPriorityWoken = pdFALSE;	// This used to check if a context switch is required
 	Chip_RIT_ClearIntStatus(LPC_RITIMER);	// clear IRQ flag
 	static std::atomic<bool> expectm2(false); //boolean keeps track if you are writing to m1Pin or m2Pin in a particular halfpulse
 	if (RIT_count > 0) { //regular case, "iterate bresenham algorithm" inside interrupt handler
-		/*WHEN LIMIT READS TRUE => LIMIT SHOUILD BE OPEN I.E. NOT-DEPRESSED BUTTON*/
-		limitStatusOK = (limitYMinP->read() && limitYMaxP->read()
-				&& limitXMaxP->read() && limitXMinP->read()); //check limits status inside ISR
+		limitStatusOK = (limitYMinP->read() && limitYMaxP->read() && limitXMaxP->read() && limitXMinP->read()); //check limits status inside ISR
 		isEven = (RIT_count % 2 == 0);
 		if (limitStatusOK) { //CALIBRATION MODE SHOULD NEVER USE RIT IRQ
 			/*at each fullstep, in the beginning,
@@ -1031,9 +1027,6 @@ void plotLineGeneral(int x0, int y0, int x1, int y1) {
 
 
 
-
-
-
 //execute_task unblocks AFTER CALIBRATION PHASE ENDS (execute_task blocks on evengroup)
 static void execute_task(void*pvParameters) {
 
@@ -1706,6 +1699,7 @@ static void logic_test_rit_bresenham_task(void*pvParameters){
 		vTaskDelay(2);
 		refactored_BresenhamInterruptAlgorithm(g_curX, g_curY, g_curX+300, g_curY+500);//59,036deg angle
 }
+
 /*here are testing tasks for bresenham plotting, to verify the algorithms in plottersimulator*/
 static void testdraw_isr_bresenham_task(void*pvParameters){
 	vTaskDelay(500);
@@ -1767,6 +1761,7 @@ static void testdraw_isr_bresenham_task(void*pvParameters){
 
 
 }
+
 
 static void draw_square_task(void*pvParameters) {
 
