@@ -46,7 +46,6 @@
 /*CONDITINAL COMPILATION OPTIONS****************************/
 
 //#define useLoopingBresenham	 // NOTE! this option chooses if you want to use RIT_interrupt-driven Bresenham algorithm, OR forlooping Bresenham algorithm
-//#define keijoSimulator //EDITED:: NOTE! keijosimulator is no longer supported conditional compilation option! it was used for inverting motoraxes for plottersimulator debugging
 
 
 /*options and variables when using RITinterruptBresingham*/
@@ -142,7 +141,6 @@ void RIT_IRQHandler(void) { //THIS VERSION IS FOR RITinterruptBresenham
 	// Tell timer that we have processed the interrupt.
 	// Timer then removes the IRQ until next match occurs
 	Chip_RIT_ClearIntStatus(LPC_RITIMER);	// clear IRQ flag
-int kakka=1;
 	static std::atomic<bool> expectm2(false); //boolean keeps track if you are writing to m1Pin or m2Pin in a particular halfpulse
 	if (RIT_count > 0) { //regular case, "iterate bresenham algorithm" inside interrupt handler
 		/*WHEN LIMIT READS TRUE => LIMIT SHOUILD BE OPEN I.E. NOT-DEPRESSED BUTTON*/
@@ -211,17 +209,17 @@ int kakka=1;
 			}
 			pulseState = !pulseState;
 			RIT_count--;
-			if (RIT_count == 0) {
-				pulseState = true; //prepare pulsestate for next G1command
-				expectm2 = false; //reset boolean in preparation for the beginning of next G1 command, so it will be false in beginning of ritstart
-				isEven = true;
-				stepXP->write(false);
-				stepYP->write(false);
-				RIT_count = 0; //reset RIT_count also, probably not needed though, because ritstart sets it up again
-				Chip_RIT_Disable(LPC_RITIMER); // disable timer
-				// Give semaphore and set context switch flag if a higher priority task was woken up
-				xSemaphoreGiveFromISR(sbRIT, &xHigherPriorityWoken);
-			}
+//			if (RIT_count == 0) {
+//				pulseState = true; //prepare pulsestate for next G1command
+//				expectm2 = false; //reset boolean in preparation for the beginning of next G1 command, so it will be false in beginning of ritstart
+//				isEven = true;
+//				stepXP->write(false);
+//				stepYP->write(false);
+//				RIT_count = 0; //reset RIT_count also, probably not needed though, because ritstart sets it up again
+//				Chip_RIT_Disable(LPC_RITIMER); // disable timer
+//				// Give semaphore and set context switch flag if a higher priority task was woken up
+//				xSemaphoreGiveFromISR(sbRIT, &xHigherPriorityWoken);
+//			}
 			/*ISR will still be called, when RIT_count == 0,
 			 * but then the interrupt doesnt write to any pins
 			 * when RIT_count==0, interrupt simply ends and
@@ -296,17 +294,17 @@ void RIT_IRQHandler(void) {
 					}
 				}
 				pulseState = !pulseState;//move motor and toggle pulsestate rit_halfpulses
-				if(RIT_count == 0){
-					pulseState = true; //prepare pulsestate for next G1command
-					expectm2 = false; //reset boolean in preparation for the beginning of next G1 command, so it will be false in beginning of ritstart
-					isEven=true;
-					stepXP->write(false);
-					stepYP->write(false);
-					RIT_count = 0; //reset RIT_count also, probably not needed though, because ritstart sets it up again
-					Chip_RIT_Disable(LPC_RITIMER); // disable timer
-					// Give semaphore and set context switch flag if a higher priority task was woken up
-					xSemaphoreGiveFromISR(sbRIT, &xHigherPriorityWoken);
-				}
+//				if(RIT_count == 0){
+//					pulseState = true; //prepare pulsestate for next G1command
+//					expectm2 = false; //reset boolean in preparation for the beginning of next G1 command, so it will be false in beginning of ritstart
+//					isEven=true;
+//					stepXP->write(false);
+//					stepYP->write(false);
+//					RIT_count = 0; //reset RIT_count also, probably not needed though, because ritstart sets it up again
+//					Chip_RIT_Disable(LPC_RITIMER); // disable timer
+//					// Give semaphore and set context switch flag if a higher priority task was woken up
+//					xSemaphoreGiveFromISR(sbRIT, &xHigherPriorityWoken);
+//				}
 			} else {//WE HIT THE WALL, set rit_count=0 and soon the motor will stop, hopefully
 				stepXP->write(false);
 				stepYP->write(false);
@@ -621,7 +619,6 @@ void refactored_BresenhamInterruptAlgorithm(int x0, int y0, int x1, int y1){
 
 	//NOTE! always ritstart with EVEN numbers because by definition, you are halfpulsing the fullpulses
 	RIT_start( 2 * fullsteps,  ( 1000000 / (2*ppsValue) )    );
-	vTaskDelay(5);
 
 }
 
@@ -1082,18 +1079,21 @@ static void execute_task(void*pvParameters) {
 			 * 6.) remember to update int valued globalXcoord and globalYcoord after each line plot move explicitly after having plotted*/
 
 			double tempx = g_xFullstepsPerMM * ( ((double)curcmd.xCoord) / 100.0); //note real program should have "identical" or "very much the same" Xstep/mm ratio == Ystep/mm ratio
-			double tempy = g_xFullstepsPerMM * ( ((double)curcmd.yCoord) / 100.0);
+			double tempy = g_yFullstepsPerMM * ( ((double)curcmd.yCoord) / 100.0);
 			int roundX = std::round(tempx);
 			int roundY = std::round(tempy);
 
 #ifndef useLoopingBresenham //ritInterrupt-Driven Bresenham
 			refactored_BresenhamInterruptAlgorithm(g_curX, g_curY, roundX,roundY );
+			vTaskDelay(5);
+
 //			g_curX = roundX;//update current coords to the "dest coords, after move"
 //			g_curY = roundY;
 			USB_send((uint8_t*) okMessage, oklen);
 #endif
 #ifdef useLoopingBresenham //forlooping Bresenham
 			plotLineGeneral(g_curX, g_curY, roundX,roundY);
+			vTaskDelay(5);
 			/*UPDATE GLOBAL COORDS, ASSUME ALGORITHM WORKED AND SET CURCOORDS=ENDCOORDS
 			 * seems to work, in example test_draw_tasks */
 //			g_curX = roundX;
@@ -1812,7 +1812,7 @@ int main(void) {
 	Chip_RIT_Init(LPC_RITIMER);// initialize RIT (= enable clocking etc.)
 	Chip_SCT_Init(LPC_SCT0);//init SCtimer0Large
 	setupPenServo();//init servo pwm into center pos for the servo
-	setupLaserPWM();
+	//setupLaserPWM();
 	// set the priority level of the interrupt
 	// The level must be equal or lower than the maximum priority specified in FreeRTOS config
 	// Note that in a Cortex-M3 a higher number indicates lower interrupt priority
@@ -1839,7 +1839,7 @@ int main(void) {
 			(TaskHandle_t *) NULL);
 
 //	/*NOTE!! here are algorithm test drawing tasks for plottersimulator*/
-//#ifdef keijoSimulator
+
 //	#ifdef useLoopingBresenham
 //	xTaskCreate(draw_square_task1, "drawsquare1",
 //			configMINIMAL_STACK_SIZE * 4, NULL, (tskIDLE_PRIORITY + 1UL),
@@ -1853,7 +1853,7 @@ int main(void) {
 //			(TaskHandle_t *) NULL);
 //
 //	#endif
-//#endif
+
 
 	/*execute mdraw commands thread*/
 	xTaskCreate(execute_task, "execute_task",
