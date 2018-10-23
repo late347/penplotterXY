@@ -85,7 +85,7 @@ volatile std::atomic<int> m1parameter(0);//  determine which pin is driven into 
 volatile std::atomic<int> m2parameter(0);//   determine which two pins are driven into which direction at the same time, diagonal motorMove
 const int ppsValue = 1000;	//arbitrary value for pps, it is more useful for RIT_interrupt-Driven Bresenham because it will affect the constant speed greatly (forlooping Bresenham only makes always 2 halfsteps with this ppsValue)
 volatile uint32_t RIT_count; //NOTE! this variable is used as amountOfHalfpulses which is double the amount of fullsteps, to drive either version of Bresenham
-static volatile std::atomic<bool> pulseState(true);//NOTE!! THIS VARIABLE IS NECESSARY for rit interrupt handlers! It is used for halfpulsing
+volatile std::atomic<bool> pulseState(true);//NOTE!! THIS VARIABLE IS NECESSARY for rit interrupt handlers! It is used for halfpulsing
 volatile std::atomic<bool> limitStatusOK(true); //global variable that the tasks can read, but RIT_isr can modify if you hit the limits.
 volatile std::atomic<bool> isEven(true);
 
@@ -172,16 +172,16 @@ void RIT_IRQHandler(void) { //THIS VERSION IS FOR RITinterruptBresenham
 				if (isEven) {
 					switch (m1parameter) {
 					case 1:
-						g_curX++;
+						++g_curX;
 						break;
 					case 5:
-						g_curX--;
+						--g_curX;
 						break;
 					case 3:
-						g_curY++;
+						++g_curY;
 						break;
 					case 7:
-						g_curY--;
+						--g_curY;
 						break;
 					}
 				}
@@ -191,20 +191,20 @@ void RIT_IRQHandler(void) { //THIS VERSION IS FOR RITinterruptBresenham
 				if (isEven) {
 					switch (m2parameter) {
 					case 2:
-						g_curX++;
-						g_curY++;
+						++g_curX;
+						++g_curY;
 						break;
 					case 4:
-						g_curX--;
-						g_curY++;
+						--g_curX;
+						++g_curY;
 						break;
 					case 6:
-						g_curX--;
-						g_curY--;
+						--g_curX;
+						--g_curY;
 						break;
 					case 8:
-						g_curX++;
-						g_curY--;
+						++g_curX;
+						--g_curY;
 						break;
 					}
 				}
@@ -1397,8 +1397,12 @@ static void real_calibrate_task(void*pvParameters){
 				USB_send((uint8_t*) stepperCalibrationBegins, calibrationLength);
 				isCalibratingServo = false; //BREAKS FROM LOOP, start stepper calibrations
 			}
-			/*deal with illegal commands during calibration phase*/ /*NOTE! SEEMS TO WORK WHEN DEBUGGING! :)*/
-			else {
+			/*deal with laser command M4*/
+			else if(calibrationcmd.commandWord == CommandStruct::M4 && calibrationcmd.isLegal){
+				setLaserValue(calibrationcmd.commandNumber);
+				USB_send((uint8_t*) okMessage, oklen);
+			}
+			else {			/*deal with illegal commands during calibration phase*/ /*NOTE! SEEMS TO WORK WHEN DEBUGGING! :)*/
 				USB_send((uint8_t*) badMessage, badLength);
 			}
 			memset(str, 0, allocsize);
