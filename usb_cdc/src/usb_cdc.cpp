@@ -50,8 +50,8 @@
 /*options and variables when using RITinterruptBresingham*/
  //variables for RITinterruptBresingham
 
-volatile std::atomic<int> g_dx, g_dy, g_nabla;
-volatile std::atomic<int> g_x_1, g_x_0, g_y_1, g_y_0;
+volatile std::atomic<int> g_dx(0), g_dy(0), g_nabla(0);
+volatile std::atomic<int> g_x_1(0), g_x_0(0), g_y_1(0), g_y_0(0);
 
 
 /*********************************************************/
@@ -82,7 +82,7 @@ volatile std::atomic<int> g_executeM1orM2(0); //check 1 or 2 inside isr to decid
 volatile std::atomic<int> g_m1parameter(0);//  determine which pin is driven into which direction, straight motorMove horiz OR vert
 volatile std::atomic<int> g_m2parameter(0);//   determine which two pins are driven into which direction at the same time, diagonal motorMove
 const int ppsValue = 2000;	//2000 pps works quite well with RIT-interrupt-driven-bresenhamPENCIL, AND ALSO forloopBresenhamPENCIL
-volatile uint32_t g_RIT_count; //NOTE! this variable is used as amountOfHalfpulses which is double the amount of fullsteps, to drive either version of Bresenham
+volatile uint32_t g_RIT_count(0); //NOTE! this variable is used as amountOfHalfpulses which is double the amount of fullsteps, to drive either version of Bresenham
 volatile std::atomic<bool> g_pulseState(true);//NOTE!! THIS VARIABLE IS NECESSARY for rit interrupt handlers! It is used for halfpulsing
 volatile std::atomic<bool> g_limitStatusOK(true); //global variable that the tasks can read, but RIT_isr can modify if you hit the limits.
 volatile std::atomic<bool> g_isEven(true);
@@ -99,8 +99,8 @@ volatile std::atomic<int> g_curY(250);
 volatile std::atomic<int> g_OriginX(0);
 volatile std::atomic<int> g_OriginY(0);
 const int g_STEPS_FROM_EDGE(360); //keeps the origin for G28 in a safely calibrated place, so doesn't hit the limits exactly when goes to (0,0) point
- double g_xFullstepsPerMM; //double fullstepsPerMillimetre ratio
- double g_yFullstepsPerMM;
+ double g_xFullstepsPerMM(0); //double fullstepsPerMillimetre ratio
+ double g_yFullstepsPerMM(0);
 
 
 //NOTE!! THESE GLOBAL POINTERS ARE NECESSARY!
