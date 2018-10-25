@@ -61,7 +61,7 @@ volatile std::atomic<int> g_x_1, g_x_0, g_y_1, g_y_0;
 QueueHandle_t commandQueue;
 SemaphoreHandle_t sbRIT; //NOTE!! THIS SEMAPHORE IS NECESSARY! DOUBLECHECK MAIN() TO SEE IF CREATED CORRECTLY...
 EventGroupHandle_t eventGroup;
-//freertos globals ends
+
 
 
 /*Bresenham's algorithm variables, and notation is based on Bresenham's published paper
@@ -75,18 +75,18 @@ decidem1parameters, getOctant, and SwapAxes were based on the journal article re
 */
 
 //NOTE! loopingBresenham version of Interrupt Handler function uses THIS EXTRA VARIABLE, USE CONDITIONAL COMPILATION...
-volatile std::atomic<int> executeM1orM2(0); //check 1 or 2 inside isr to decide USED FOR loopingBresenham versio
+volatile std::atomic<int> g_executeM1orM2(0); //check 1 or 2 inside isr to decide USED FOR loopingBresenham versio
 
 
 //These global variables are shared usage between either case of conditional compilation Interrupt Handlers...
-volatile std::atomic<int> m1parameter(0);//  determine which pin is driven into which direction, straight motorMove horiz OR vert
-volatile std::atomic<int> m2parameter(0);//   determine which two pins are driven into which direction at the same time, diagonal motorMove
+volatile std::atomic<int> g_m1parameter(0);//  determine which pin is driven into which direction, straight motorMove horiz OR vert
+volatile std::atomic<int> g_m2parameter(0);//   determine which two pins are driven into which direction at the same time, diagonal motorMove
 const int ppsValue = 2000;	//2000 pps works quite well with RIT-interrupt-driven-bresenhamPENCIL, AND ALSO forloopBresenhamPENCIL
-volatile uint32_t RIT_count; //NOTE! this variable is used as amountOfHalfpulses which is double the amount of fullsteps, to drive either version of Bresenham
-volatile std::atomic<bool> pulseState(true);//NOTE!! THIS VARIABLE IS NECESSARY for rit interrupt handlers! It is used for halfpulsing
-volatile std::atomic<bool> limitStatusOK(true); //global variable that the tasks can read, but RIT_isr can modify if you hit the limits.
-volatile std::atomic<bool> isEven(true);
-volatile std::atomic<bool> expectm2(false); //boolean keeps track if you are writing to m1Pin or m2Pin in a particular halfpulse
+volatile uint32_t g_RIT_count; //NOTE! this variable is used as amountOfHalfpulses which is double the amount of fullsteps, to drive either version of Bresenham
+volatile std::atomic<bool> g_pulseState(true);//NOTE!! THIS VARIABLE IS NECESSARY for rit interrupt handlers! It is used for halfpulsing
+volatile std::atomic<bool> g_limitStatusOK(true); //global variable that the tasks can read, but RIT_isr can modify if you hit the limits.
+volatile std::atomic<bool> g_isEven(true);
+volatile std::atomic<bool> g_expectm2(false); //boolean keeps track if you are writing to m1Pin or m2Pin in a particular halfpulse
 
 PlotterSettings savedplottersettings; //global object keeps track of saveable and saved mDraw settings
 
@@ -137,31 +137,31 @@ void RIT_IRQHandler(void) { //THIS VERSION IS FOR RITinterruptBresenham
 
 	portBASE_TYPE xHigherPriorityWoken = pdFALSE;	// This used to check if a context switch is required
 	Chip_RIT_ClearIntStatus(LPC_RITIMER);	// clear IRQ flag
-	if (RIT_count > 0) {
-		limitStatusOK = (limitYMinP->read() && limitYMaxP->read() && limitXMaxP->read() && limitXMinP->read()); //check limits status inside ISR
-		isEven = (RIT_count % 2 == 0);
-		if (limitStatusOK) { //CALIBRATION MODE SHOULD NEVER USE RIT IRQ
+	if (g_RIT_count > 0) {
+		g_limitStatusOK = (limitYMinP->read() && limitYMaxP->read() && limitXMaxP->read() && limitXMinP->read()); //check limits status inside ISR
+		g_isEven = (g_RIT_count % 2 == 0);
+		if (g_limitStatusOK) { //CALIBRATION MODE SHOULD NEVER USE RIT IRQ
 			/*at each fullstep, in the beginning,
 			 * use decisionparameter to iterate over bresenham
 			 * When RIT_count is odd, => implies that current ISR round is basically
 			 * writing false cycle to the steppins, to complete any given fullstep*/
-			if (isEven) {
+			if (g_isEven) {
 				if (g_nabla >= 0) {
-					expectm2 = true;
+					g_expectm2 = true;
 					g_nabla = g_nabla + 2 * g_dy - 2 * g_dx;
 				} else {
-					expectm2 = false;
+					g_expectm2 = false;
 					g_nabla = g_nabla + 2 * g_dy;
 				}
 			}
-			if (!expectm2) {
-				if (m1parameter == 1 || m1parameter == 5) {
-					stepXP->write(pulseState);
-				} else if (m1parameter == 3 || m1parameter == 7) {
-					stepYP->write(pulseState);
+			if (!g_expectm2) {
+				if (g_m1parameter == 1 || g_m1parameter == 5) {
+					stepXP->write(g_pulseState);
+				} else if (g_m1parameter == 3 || g_m1parameter == 7) {
+					stepYP->write(g_pulseState);
 				}
-				if (isEven) {
-					switch (m1parameter) {
+				if (g_isEven) {
+					switch (g_m1parameter) {
 					case 1: ++g_curX; break;
 					case 5: --g_curX; break;
 					case 3: ++g_curY; break;
@@ -169,10 +169,10 @@ void RIT_IRQHandler(void) { //THIS VERSION IS FOR RITinterruptBresenham
 					}
 				}
 			}else {
-				stepYP->write(pulseState);
-				stepXP->write(pulseState);
-				if (isEven) {
-					switch (m2parameter) {
+				stepYP->write(g_pulseState);
+				stepXP->write(g_pulseState);
+				if (g_isEven) {
+					switch (g_m2parameter) {
 					case 2: ++g_curX; ++g_curY; break;
 					case 4: --g_curX; ++g_curY;	break;
 					case 6: --g_curX; --g_curY; break;
@@ -180,8 +180,8 @@ void RIT_IRQHandler(void) { //THIS VERSION IS FOR RITinterruptBresenham
 					}
 				}
 			}
-			pulseState = !pulseState;
-			RIT_count--;
+			g_pulseState = !g_pulseState;
+			g_RIT_count--;
 //			if (RIT_count == 0) {
 //				pulseState = true; //prepare pulsestate for next G1command
 //				expectm2 = false; //reset boolean in preparation for the beginning of next G1 command, so it will be false in beginning of ritstart
@@ -194,12 +194,12 @@ void RIT_IRQHandler(void) { //THIS VERSION IS FOR RITinterruptBresenham
 		} else { //WE HIT THE WALL, set rit_count=0, stop stepPins, and soon the motor will stop, hopefully
 			stepXP->write(false);
 			stepYP->write(false);
-			RIT_count = 0;
+			g_RIT_count = 0;
 		}
 	} else { // "iterate bresenham" has ended, prepare to reset variables and stop interrupt
-		pulseState = true; //prepare pulsestate for next G1command
-		expectm2 = false; //reset boolean in preparation for the beginning of next G1 command, so it will be false in beginning of ritstart
-		RIT_count = 0; //reset RIT_count also, probably not needed though, because ritstart sets it up again
+		g_pulseState = true; //prepare pulsestate for next G1command
+		g_expectm2 = false; //reset boolean in preparation for the beginning of next G1 command, so it will be false in beginning of ritstart
+		g_RIT_count = 0; //reset RIT_count also, probably not needed though, because ritstart sets it up again
 		Chip_RIT_Disable(LPC_RITIMER); // disable timer
 		// Give semaphore and set context switch flag if a higher priority task was woken up
 		xSemaphoreGiveFromISR(sbRIT, &xHigherPriorityWoken);
@@ -222,33 +222,33 @@ void RIT_IRQHandler(void) {
 	Chip_RIT_ClearIntStatus(LPC_RITIMER); // clear IRQ flag
 
 
-		if (RIT_count > 0) {
-			isEven= (RIT_count % 2 == 0);
-			RIT_count--;
+		if (g_RIT_count > 0) {
+			g_isEven= (g_RIT_count % 2 == 0);
+			g_RIT_count--;
 			// do something useful here...
-			limitStatusOK = (  limitYMinP->read() && limitYMaxP->read() && limitXMaxP->read() && limitXMinP->read()  );
-			if (limitStatusOK) {
-				if(executeM1orM2==1) { //execute M1 pattern move
-					switch(m1parameter) { //actuate only one motor straight move
-					case 1: stepXP->write(pulseState); break;
-					case 3: stepYP->write(pulseState); break;
-					case 5: stepXP->write(pulseState); break;
-					case 7: stepYP->write(pulseState); break;
+			g_limitStatusOK = (  limitYMinP->read() && limitYMaxP->read() && limitXMaxP->read() && limitXMinP->read()  );
+			if (g_limitStatusOK) {
+				if(g_executeM1orM2==1) { //execute M1 pattern move
+					switch(g_m1parameter) { //actuate only one motor straight move
+					case 1: stepXP->write(g_pulseState); break;
+					case 3: stepYP->write(g_pulseState); break;
+					case 5: stepXP->write(g_pulseState); break;
+					case 7: stepYP->write(g_pulseState); break;
 					default: break;//shouldnt be here
 					}
-					if(isEven){
-						switch(m1parameter){
+					if(g_isEven){
+						switch(g_m1parameter){
 						case 1: g_curX++; break;
 						case 3: g_curY++; break;
 						case 5: g_curX--; break;
 						case 7: g_curY--; break;
 						}
 					}
-				}else if(executeM1orM2 == 2){//execute M2 pattern move
-					stepXP->write(pulseState);//actuate both motors diagonal move
-					stepYP->write(pulseState);
-					if (isEven) {
-						switch(m2parameter){
+				}else if(g_executeM1orM2 == 2){//execute M2 pattern move
+					stepXP->write(g_pulseState);//actuate both motors diagonal move
+					stepYP->write(g_pulseState);
+					if (g_isEven) {
+						switch(g_m2parameter){
 						case 2: g_curX++; g_curY++; break;
 						case 4: g_curX--; g_curY++; break;
 						case 6: g_curX--; g_curY--; break;
@@ -256,14 +256,14 @@ void RIT_IRQHandler(void) {
 						}
 					}
 				}
-				pulseState = !pulseState;//move motor and toggle pulsestate rit_halfpulses
-				if(RIT_count == 0){
-					pulseState = true; //prepare pulsestate for next G1command
-					expectm2 = false; //reset boolean in preparation for the beginning of next G1 command, so it will be false in beginning of ritstart
-					isEven=true;
+				g_pulseState = !g_pulseState;//move motor and toggle pulsestate rit_halfpulses
+				if(g_RIT_count == 0){
+					g_pulseState = true; //prepare pulsestate for next G1command
+					g_expectm2 = false; //reset boolean in preparation for the beginning of next G1 command, so it will be false in beginning of ritstart
+					g_isEven=true;
 //					stepXP->write(false);
 //					stepYP->write(false);
-					RIT_count = 0; //reset RIT_count also, probably not needed though, because ritstart sets it up again
+					g_RIT_count = 0; //reset RIT_count also, probably not needed though, because ritstart sets it up again
 					Chip_RIT_Disable(LPC_RITIMER); // disable timer
 					// Give semaphore and set context switch flag if a higher priority task was woken up
 					xSemaphoreGiveFromISR(sbRIT, &xHigherPriorityWoken);
@@ -271,10 +271,10 @@ void RIT_IRQHandler(void) {
 			} else {//WE HIT THE WALL, set rit_count=0 and soon the motor will stop, hopefully
 				stepXP->write(false);
 				stepYP->write(false);
-				RIT_count = 0;
+				g_RIT_count = 0;
 			}
 		} else {
-			pulseState=true;
+			g_pulseState=true;
 //			stepXP->write(false);
 //			stepYP->write(false);
 			Chip_RIT_Disable(LPC_RITIMER); // disable timer
@@ -340,7 +340,7 @@ void RIT_start(int count, int us) {
 			/ 1000000;
 	// disable timer during configuration
 	Chip_RIT_Disable(LPC_RITIMER);
-	RIT_count = count;
+	g_RIT_count = count;
 	// enable automatic clear on when compare value==timer value
 	// this makes interrupts trigger periodically
 	Chip_RIT_EnableCompClear(LPC_RITIMER);
@@ -408,7 +408,7 @@ int refactored_getOctant(const int orig_dx, const int orig_dy){
 }
 
 /*helper functions for RIT_INTERRUPT BRESENHAM */
-void refactored_decideM1Parameter(const int octant){
+int refactored_decideM1Parameter(const int octant){
 	/*from bresenhams original researchpaper, near the
 	tabulated data section
 
@@ -427,13 +427,12 @@ void refactored_decideM1Parameter(const int octant){
 		default:break;//shoudlnt be here
 	}
 
-	//decide and set global variable m1pattern
-	m1parameter = pattern1;
+	return pattern1;
 
 }
 
 /*helper functions for RIT_INTERRUPT BRESENHAM */
-void refactored_decideM2Parameter(const int octant){
+int refactored_decideM2Parameter(const int octant){
 	/*from bresenhams original researchpaper, near the
 	tabulated data section
 
@@ -453,7 +452,7 @@ void refactored_decideM2Parameter(const int octant){
 	}
 
 	//decide and set global variable m2parameter
-	m2parameter = pattern2;
+	return pattern2;
 
 }
 
@@ -571,11 +570,11 @@ void refactored_BresenhamInterruptAlgorithm(int x0, int y0, int x1, int y1){
 	g_nabla = 0;
 	//global nabla is hopefully properly initialized in the refactored_decideSwapAxes
 	const int oct = refactored_getOctant(raw_dx, raw_dy);
-	refactored_decideM1Parameter(oct);
-	refactored_decideM2Parameter(oct);
+	g_m1parameter = refactored_decideM1Parameter(oct);
+	g_m2parameter = refactored_decideM2Parameter(oct);
 
 	//refactored_setupBresenhamDirPins(m1parameter, m2parameter);
-	testing_setupBresenhamDirPins(m1parameter,m2parameter); //this function is cleaner code, it was refactored from the other refactored_setupBresenhamDirPins()
+	testing_setupBresenhamDirPins(g_m1parameter, g_m2parameter); //this function is cleaner code, it was refactored from the other refactored_setupBresenhamDirPins()
 	refactored_decideSwapAxes(oct); //knowing the drivingAxis returnvalue from refactored_decideSwapAxes() isnt important except for debugging,
 
 
@@ -629,8 +628,7 @@ int adjustm1motor(int curOctant) {
 		default:break;//shoudlnt be here
 
 	}
-	m1parameter = M1pattern; //set the global variable to notify isr about step parameter
-	return m1parameter;
+	return M1pattern;
 
 }
 
@@ -678,8 +676,8 @@ int adjustm2motor(int curOctant) {
 	default:break;
 	}
 
-	m2parameter = M2pattern; //set the global variable to notify isr about step parameter
-	return m2parameter;
+
+	return M2pattern;
 }
 
 
@@ -689,7 +687,7 @@ void setupLaserPWM(){
 	LPC_SCT0->CONFIG |= (3 << 17);	 // two 16-bit timers, auto limit, use  the HIGHCOUNTER FOR LASER, (use lowcounter for pencilservo)
 	LPC_SCT0->CTRL_H |= (72 - 1) << 21; 	// set prescaler highcounter, SCTimer/PWM clock == 72mhz / 72 == 1mhz
 	LPC_SCT0->MATCHREL[0].H = 1000 - 1; 	//sct0 highcounter  freq
-	LPC_SCT0->MATCHREL[1].H = 0; 	// sct0 highcounter pulsewidth laser
+	LPC_SCT0->MATCHREL[1].H = 235; 	// sct0 highcounter pulsewidth laser
 	Chip_SWM_MovablePortPinAssign(SWM_SCT0_OUT1_O, 0, 12);  //set laserpin to sct0 output1
 
 	/*configure events, freq event for laser, and pulsewidthmatch event for laser*/
@@ -716,12 +714,7 @@ void setLaserValue(int amount){
 
 	/*put the amount [0,255] directly into laser pulsewidthmatch register, after it was legally within range*/
 	if(allowed){
-		if(amount > 250){
-			newval = 1000;
-		}
-		else{
-			newval = 4 * amount;
-		}
+		newval = 3 * amount +235;
 		LPC_SCT0->MATCHREL[1].H = newval;
 	}
 
@@ -836,15 +829,15 @@ int getOctant(bool A, bool B, bool C) {
 //special case for purely horizontal moves BRESENHAM loopingBresenham
 void plotLineHoriz(int x0, int y0, int x1, int y1) {
 	int dx = x1 - x0;
-	executeM1orM2 = 1; //notify isr global variable which patternm1 or patternm2 to execute, in this case only one motor move => hence m1pattern
+	g_executeM1orM2 = 1; //notify isr global variable which patternm1 or patternm2 to execute, in this case only one motor move => hence m1pattern
 	if (dx > 0) {
 		//xmotordir right
 		dirXP->write(false);
-		m1parameter = 1; //set global volatile variable to notify isr which m1 motor to actjuate
+		g_m1parameter = 1; //set global volatile variable to notify isr which m1 motor to actjuate
 	} else {
 		//xmotordir left
 		dirXP->write(true);
-		m1parameter = 5;
+		g_m1parameter = 5;
 	}
 
 
@@ -859,14 +852,14 @@ void plotLineHoriz(int x0, int y0, int x1, int y1) {
 void plotLineVert(int x0, int y0, int x1, int y1) {
 
 	int dy = y1 - y0;
-	executeM1orM2 = 1; //notify isr which patternm1 or patternm2 to execute, in this case only one motor move => hence m1pattern
+	g_executeM1orM2 = 1; //notify isr which patternm1 or patternm2 to execute, in this case only one motor move => hence m1pattern
 	if (dy > 0) {
 		//y motor up
-		m1parameter = 3; //notify isr with global variable to expect ymotor up
+		g_m1parameter = 3; //notify isr with global variable to expect ymotor up
 		dirYP->write(false);
 	} else {
 		//ymotor down
-		m1parameter = 7; //notify isr with global variable to expect ymotor down
+		g_m1parameter = 7; //notify isr with global variable to expect ymotor down
 		dirYP->write(true);
 	}
 
@@ -896,13 +889,13 @@ void plotLineLow(int x0, int y0, int x1, int y1, bool makeSwap) {
 			/*execute diagonal m2 move (step x and y motor at same time)???
 			 m2 move type depends on the octant
 			 m1 move type depends on octant also (m1 is either horiz or vert move)*/
-			executeM1orM2 = 2; //set global volatile boolean, so that interrupthandler knows which movementpattern to execute
+			g_executeM1orM2 = 2; //set global volatile boolean, so that interrupthandler knows which movementpattern to execute
 			RIT_start(2, 1000000 / (2 * ppsValue));
 
 		}
 		else {
 			//execute m1 move
-			executeM1orM2 = 1;
+			g_executeM1orM2 = 1;
 			RIT_start(2, 1000000/(2*ppsValue) );
 		}
 		nabla = nabla + 2 * dy;//update decisionparameter nabla
@@ -930,12 +923,12 @@ void plotLineHigh(int x0, int y0, int x1, int y1, bool makeSwap) {
 			//execute diagonal m2 move (step x and y motor at same time)
 			// m2 move type depends on the octant
 			//m1 move type depends on octant also (m1 is either horiz or vert move)
-			executeM1orM2 = 2;
+			g_executeM1orM2 = 2;
 			RIT_start(2, 1000000/(2*ppsValue) );
 		}
 		else {
 			//execute m1 move
-			executeM1orM2 = 1;
+			g_executeM1orM2 = 1;
 			RIT_start(2, 1000000/(2*ppsValue) );
 		}
 		nabla = nabla + 2 * dx;//update decisionparameter nabla
@@ -972,8 +965,8 @@ void plotLineGeneral(int x0, int y0, int x1, int y1) {
 						(y1 - y0 < 0),
 						(abs(x1 - x0) - abs(y1 - y0) < 0));
 
-		m2parameter = adjustm2motor(oct);
-		m1parameter = adjustm1motor(oct);
+		g_m2parameter = adjustm2motor(oct);
+		g_m1parameter = adjustm1motor(oct);
 
 		if (res) {
 			if (x0 > x1) {
@@ -1021,7 +1014,7 @@ static void execute_task(void*pvParameters) {
  * NOTE! you are allowd to hit the limits during real_calibration_task, BUT NO LONGER ALLOWED
  * during regular operation between producer-consumer (parse_task and execute_task)
  * */
-	for( ; limitStatusOK == true ; ){
+	for( ; g_limitStatusOK == true ; ){
 		xQueueReceive(commandQueue, &curcmd, portMAX_DELAY); //get command from queue
 
 		/*process G1 command, and make appropriate usb_send response*/
@@ -1055,8 +1048,6 @@ static void execute_task(void*pvParameters) {
 #endif
 #ifdef useLoopingBresenham //forlooping Bresenham
 			plotLineGeneral(g_curX, g_curY, roundX,roundY);
-			/*UPDATE GLOBAL COORDS, ASSUME ALGORITHM WORKED AND SET CURCOORDS=ENDCOORDS
-			 * seems to work, in example test_draw_tasks */
 //			g_curX = roundX;
 //			g_curY = roundY;
 			USB_send((uint8_t*) okMessage, oklen);
@@ -1162,7 +1153,7 @@ static void parse_task(void*pvParameters) {
 	 * during regular operation between producer-consumer (parse_task and execute_task)
 	 * */
 
-	for ( ; limitStatusOK == true ; ) {
+	for ( ; g_limitStatusOK == true ; ) {
 
 		char str[allocsize] { 0 };		//str buffer is allocated
 		uint32_t len = USB_receive((uint8_t *) str, allocsize - 1);
