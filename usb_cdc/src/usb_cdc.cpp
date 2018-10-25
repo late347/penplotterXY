@@ -44,7 +44,7 @@
 
 
 /*CONDITINAL COMPILATION OPTIONS****************************/
-//#define useLoopingBresenham	 // NOTE! this option chooses if you want to use RIT_interrupt-driven Bresenham algorithm, OR forlooping Bresenham algorithm
+#define useLoopingBresenham	 // NOTE! this option chooses if you want to use RIT_interrupt-driven Bresenham algorithm, OR forlooping Bresenham algorithm
 //#define logicAnalyzerTest
 
 /*options and variables when using RITinterruptBresingham*/
@@ -87,7 +87,7 @@ volatile std::atomic<bool> g_pulseState(true);//NOTE!! THIS VARIABLE IS NECESSAR
 volatile std::atomic<bool> g_limitStatusOK(true); //global variable that the tasks can read, but RIT_isr can modify if you hit the limits.
 volatile std::atomic<bool> g_isEven(true);
 volatile std::atomic<bool> g_expectm2(false); //boolean keeps track if you are writing to m1Pin or m2Pin in a particular halfpulse
-
+volatile std::atomic<int> g_octant(0);
 PlotterSettings savedplottersettings; //global object keeps track of saveable and saved mDraw settings
 
 //these are device current coords global variables for plottercoords
@@ -214,76 +214,61 @@ void RIT_IRQHandler(void) { //THIS VERSION IS FOR RITinterruptBresenham
 /*********************************************************************************************************************************/
 
 
-/*** RIT interrupt handler for looping-style Bresenham algorithm, USE CONDITIONAL COMPILATION TO ENABLE ***/
+/*** RIT interrupt handler for the  forloopingBresenham algorithm, USE CONDITIONAL COMPILATION TO ENABLE ***/
 #ifdef useLoopingBresenham
 extern "C" {
 void RIT_IRQHandler(void) {
-	portBASE_TYPE xHigherPriorityWoken = pdFALSE;	// This used to check if a context switch is required
+	portBASE_TYPE xHigherPriorityWoken = pdFALSE;// This used to check if a context switch is required
 	Chip_RIT_ClearIntStatus(LPC_RITIMER); // clear IRQ flag
 
-
-		if (g_RIT_count > 0) {
-			g_isEven= (g_RIT_count % 2 == 0);
-			g_RIT_count--;
-			// do something useful here...
-			g_limitStatusOK = (  limitYMinP->read() && limitYMaxP->read() && limitXMaxP->read() && limitXMinP->read()  );
-			if (g_limitStatusOK) {
-				if(g_executeM1orM2==1) { //execute M1 pattern move
-					switch(g_m1parameter) { //actuate only one motor straight move
+	if (g_RIT_count > 0) {
+		g_isEven = (g_RIT_count % 2 == 0);
+		g_RIT_count--;
+		g_limitStatusOK = (limitYMinP->read() && limitYMaxP->read() && limitXMaxP->read() && limitXMinP->read());
+		if (g_limitStatusOK) {
+			if (g_executeM1orM2 == 1) { //execute M1 pattern move
+				switch (g_m1parameter) { //actuate only drivingAxis motor straight move
 					case 1: stepXP->write(g_pulseState); break;
 					case 3: stepYP->write(g_pulseState); break;
 					case 5: stepXP->write(g_pulseState); break;
 					case 7: stepYP->write(g_pulseState); break;
-					default: break;//shouldnt be here
-					}
-					if(g_isEven){
-						switch(g_m1parameter){
+				}
+				if (g_isEven) {
+					switch (g_m1parameter) {
 						case 1: g_curX++; break;
 						case 3: g_curY++; break;
 						case 5: g_curX--; break;
 						case 7: g_curY--; break;
-						}
-					}
-				}else if(g_executeM1orM2 == 2){//execute M2 pattern move
-					stepXP->write(g_pulseState);//actuate both motors diagonal move
-					stepYP->write(g_pulseState);
-					if (g_isEven) {
-						switch(g_m2parameter){
-						case 2: g_curX++; g_curY++; break;
-						case 4: g_curX--; g_curY++; break;
-						case 6: g_curX--; g_curY--; break;
-						case 8: g_curX++; g_curY--; break;
-						}
 					}
 				}
-				g_pulseState = !g_pulseState;//move motor and toggle pulsestate rit_halfpulses
-				if(g_RIT_count == 0){
-					g_pulseState = true; //prepare pulsestate for next G1command
-					g_expectm2 = false; //reset boolean in preparation for the beginning of next G1 command, so it will be false in beginning of ritstart
-					g_isEven=true;
-//					stepXP->write(false);
-//					stepYP->write(false);
-					g_RIT_count = 0; //reset RIT_count also, probably not needed though, because ritstart sets it up again
-					Chip_RIT_Disable(LPC_RITIMER); // disable timer
-					// Give semaphore and set context switch flag if a higher priority task was woken up
-					xSemaphoreGiveFromISR(sbRIT, &xHigherPriorityWoken);
+			} else if (g_executeM1orM2 == 2) { //execute M2 pattern move
+				//execute m2motormove for the correct octant
+				switch(g_octant){
+				case 1: stepYP->write(g_pulseState); if(g_isEven) ++g_curY; break;
+				case 2: stepXP->write(g_pulseState); if(g_isEven) ++g_curX; break;
+				case 3: stepXP->write(g_pulseState); if(g_isEven) --g_curX; break;
+				case 4: stepYP->write(g_pulseState); if(g_isEven) ++g_curY; break;
+				case 5: stepYP->write(g_pulseState); if(g_isEven) --g_curY; break;
+				case 6: stepXP->write(g_pulseState); if(g_isEven) --g_curX; break;
+				case 7: stepXP->write(g_pulseState); if(g_isEven) ++g_curX; break;
+				case 8: stepYP->write(g_pulseState); if(g_isEven) --g_curY; break;
 				}
-			} else {//WE HIT THE WALL, set rit_count=0 and soon the motor will stop, hopefully
-				stepXP->write(false);
-				stepYP->write(false);
-				g_RIT_count = 0;
-			}
-		} else {
-			g_pulseState=true;
-//			stepXP->write(false);
-//			stepYP->write(false);
-			Chip_RIT_Disable(LPC_RITIMER); // disable timer
-			// Give semaphore and set context switch flag if a higher priority task was woken up
-			xSemaphoreGiveFromISR(sbRIT, &xHigherPriorityWoken);
-		}
-		// End the ISR and (possibly) do a context switch
-		portEND_SWITCHING_ISR(xHigherPriorityWoken);
 
+			}
+			g_pulseState = !g_pulseState; //move motor and toggle pulsestate rit_halfpulses
+		}else{
+			stepXP->write(false);
+			stepYP->write(false);
+			g_RIT_count = 0;
+		}
+	} else {
+		g_pulseState=true;
+		Chip_RIT_Disable(LPC_RITIMER); // disable timer
+		xSemaphoreGiveFromISR(sbRIT, &xHigherPriorityWoken);// Give semaphore and set context switch flag if a higher priority task was woken up
+	}
+
+	// End the ISR and (possibly) do a context switch
+	portEND_SWITCHING_ISR(xHigherPriorityWoken);
 
 }
 }
@@ -501,7 +486,7 @@ char refactored_decideSwapAxes(const int octant){
 }
 
 /*helper functions for RIT_INTERRUPT BRESENHAM */
-void testing_setupBresenhamDirPins(const int m1param, const int m2param){
+void refactored_setupBresenhamDirPins(const int m1param, const int m2param){
 
 	switch(m1param){
 	case 1:
@@ -574,7 +559,7 @@ void refactored_BresenhamInterruptAlgorithm(int x0, int y0, int x1, int y1){
 	g_m2parameter = refactored_decideM2Parameter(oct);
 
 	//refactored_setupBresenhamDirPins(m1parameter, m2parameter);
-	testing_setupBresenhamDirPins(g_m1parameter, g_m2parameter); //this function is cleaner code, it was refactored from the other refactored_setupBresenhamDirPins()
+	refactored_setupBresenhamDirPins(g_m1parameter, g_m2parameter); //this function is cleaner code, it was refactored from the other refactored_setupBresenhamDirPins()
 	refactored_decideSwapAxes(oct); //knowing the drivingAxis returnvalue from refactored_decideSwapAxes() isnt important except for debugging,
 
 
@@ -886,12 +871,10 @@ void plotLineLow(int x0, int y0, int x1, int y1, bool makeSwap) {
 	for (x; x < x1; x++) { //x is driving axis
 		if (nabla > 0) {
 			nabla = nabla - 2 * dx; //update decisionparameter nabla
-			/*execute diagonal m2 move (step x and y motor at same time)???
-			 m2 move type depends on the octant
-			 m1 move type depends on octant also (m1 is either horiz or vert move)*/
 			g_executeM1orM2 = 2; //set global volatile boolean, so that interrupthandler knows which movementpattern to execute
 			RIT_start(2, 1000000 / (2 * ppsValue));
-
+			g_executeM1orM2 = 1;
+			RIT_start(2, 1000000 / (2 * ppsValue));
 		}
 		else {
 			//execute m1 move
@@ -920,10 +903,11 @@ void plotLineHigh(int x0, int y0, int x1, int y1, bool makeSwap) {
 	for (y; y < y1; y++) { //y is driving axis
 		if (nabla > 0) {
 			nabla = nabla - 2 * dy;//update decisionparameter nabla
-			//execute diagonal m2 move (step x and y motor at same time)
 			// m2 move type depends on the octant
 			//m1 move type depends on octant also (m1 is either horiz or vert move)
 			g_executeM1orM2 = 2;
+			RIT_start(2, 1000000/(2*ppsValue) );
+			g_executeM1orM2 = 1;
 			RIT_start(2, 1000000/(2*ppsValue) );
 		}
 		else {
@@ -937,12 +921,6 @@ void plotLineHigh(int x0, int y0, int x1, int y1, bool makeSwap) {
 
 //BRESENHAM MAIN FUNCTION FORLOOPING BRESENHAM
 void plotLineGeneral(int x0, int y0, int x1, int y1) {
-	/*octant notation goes from
-	 angle 0deg to 45deg == oct 1
-	 angle 45deg to 90deg == oct 2
-	 etc...
-	 */
-	int oct = 0;
 
 	/*NOTE!! if you get same startpoint and endingpoint, DONT draw anything, GOTO ENDINGPOINT*/
 	if (x0 == x1 && y0 == y1) { //zero length line, dont draw anything for safety purposes!
@@ -961,12 +939,12 @@ void plotLineGeneral(int x0, int y0, int x1, int y1) {
 	else {
 		bool res = abs(y1 - y0) < abs(x1 - x0);
 		bool doSwap = false;
-		oct = getOctant((x1 - x0 < 0),
+		g_octant = getOctant((x1 - x0 < 0),
 						(y1 - y0 < 0),
 						(abs(x1 - x0) - abs(y1 - y0) < 0));
 
-		g_m2parameter = adjustm2motor(oct);
-		g_m1parameter = adjustm1motor(oct);
+		g_m2parameter = adjustm2motor(g_octant);
+		g_m1parameter = adjustm1motor(g_octant);
 
 		if (res) {
 			if (x0 > x1) {
@@ -982,7 +960,7 @@ void plotLineGeneral(int x0, int y0, int x1, int y1) {
 	}
 
 	endingpoint:  //ending label for goto, for the special case of same startpoint and same endpoint, dont do anything
-	vTaskDelay(2);
+	vTaskDelay();
 	int kakka1=0;	//I think we maybe have to have the statement after endingpoint label to compile?!
 }
 
