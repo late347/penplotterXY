@@ -44,8 +44,7 @@
 
 
 /*CONDITINAL COMPILATION OPTIONS****************************/
-
-#define useLoopingBresenham	 // NOTE! this option chooses if you want to use RIT_interrupt-driven Bresenham algorithm, OR forlooping Bresenham algorithm
+//#define useLoopingBresenham	 // NOTE! this option chooses if you want to use RIT_interrupt-driven Bresenham algorithm, OR forlooping Bresenham algorithm
 //#define logicAnalyzerTest
 
 /*options and variables when using RITinterruptBresingham*/
@@ -100,8 +99,8 @@ volatile std::atomic<int> g_curY(250);
 volatile std::atomic<int> g_OriginX(0);
 volatile std::atomic<int> g_OriginY(0);
 const int g_STEPS_FROM_EDGE(360); //keeps the origin for G28 in a safely calibrated place, so doesn't hit the limits exactly when goes to (0,0) point
-volatile double g_xFullstepsPerMM; //double fullstepsPerMillimetre ratio
-volatile double g_yFullstepsPerMM;
+ double g_xFullstepsPerMM; //double fullstepsPerMillimetre ratio
+ double g_yFullstepsPerMM;
 
 
 //NOTE!! THESE GLOBAL POINTERS ARE NECESSARY!
@@ -183,22 +182,15 @@ void RIT_IRQHandler(void) { //THIS VERSION IS FOR RITinterruptBresenham
 			}
 			pulseState = !pulseState;
 			RIT_count--;
-			if (RIT_count == 0) {
-				pulseState = true; //prepare pulsestate for next G1command
-				expectm2 = false; //reset boolean in preparation for the beginning of next G1 command, so it will be false in beginning of ritstart
-				isEven = true;
-//				stepXP->write(false);
-//				stepYP->write(false);
-				RIT_count = 0; //reset RIT_count also, probably not needed though, because ritstart sets it up again
-				Chip_RIT_Disable(LPC_RITIMER); // disable timer
-				// Give semaphore and set context switch flag if a higher priority task was woken up
-				xSemaphoreGiveFromISR(sbRIT, &xHigherPriorityWoken);
-			}
-			/*ISR will still be called, when RIT_count == 0,
-			 * but then the interrupt doesnt write to any pins
-			 * when RIT_count==0, interrupt simply ends and
-			 * resets RIT_count= and expectm2=false  */
-
+//			if (RIT_count == 0) {
+//				pulseState = true; //prepare pulsestate for next G1command
+//				expectm2 = false; //reset boolean in preparation for the beginning of next G1 command, so it will be false in beginning of ritstart
+//				isEven = true;
+//				RIT_count = 0; //reset RIT_count also, probably not needed though, because ritstart sets it up again
+//				Chip_RIT_Disable(LPC_RITIMER); // disable timer
+//				// Give semaphore and set context switch flag if a higher priority task was woken up
+//				xSemaphoreGiveFromISR(sbRIT, &xHigherPriorityWoken);
+//			}
 		} else { //WE HIT THE WALL, set rit_count=0, stop stepPins, and soon the motor will stop, hopefully
 			stepXP->write(false);
 			stepYP->write(false);
@@ -207,8 +199,6 @@ void RIT_IRQHandler(void) { //THIS VERSION IS FOR RITinterruptBresenham
 	} else { // "iterate bresenham" has ended, prepare to reset variables and stop interrupt
 		pulseState = true; //prepare pulsestate for next G1command
 		expectm2 = false; //reset boolean in preparation for the beginning of next G1 command, so it will be false in beginning of ritstart
-//		stepXP->write(false);
-//		stepYP->write(false);
 		RIT_count = 0; //reset RIT_count also, probably not needed though, because ritstart sets it up again
 		Chip_RIT_Disable(LPC_RITIMER); // disable timer
 		// Give semaphore and set context switch flag if a higher priority task was woken up
