@@ -44,7 +44,7 @@
 
 
 /*CONDITINAL COMPILATION OPTIONS****************************/
-#define useLoopingBresenham	 // NOTE! this option chooses if you want to use RIT_interrupt-driven Bresenham algorithm, OR forlooping Bresenham algorithm
+//#define useLoopingBresenham	 // NOTE! this option chooses if you want to use RIT_interrupt-driven Bresenham algorithm, OR forlooping Bresenham algorithm
 //#define logicAnalyzerTest
 
 /*options and variables when using RITinterruptBresingham*/
@@ -182,11 +182,11 @@ void RIT_IRQHandler(void) { //THIS VERSION IS FOR RITinterruptBresenham
 			}
 			g_pulseState = !g_pulseState;
 			g_RIT_count--;
-//			if (RIT_count == 0) {
-//				pulseState = true; //prepare pulsestate for next G1command
-//				expectm2 = false; //reset boolean in preparation for the beginning of next G1 command, so it will be false in beginning of ritstart
-//				isEven = true;
-//				RIT_count = 0; //reset RIT_count also, probably not needed though, because ritstart sets it up again
+//			if (g_RIT_count == 0) {
+//				g_pulseState = true; //prepare pulsestate for next G1command
+//				g_expectm2 = false; //reset boolean in preparation for the beginning of next G1 command, so it will be false in beginning of ritstart
+//				g_isEven = true;
+//				g_RIT_count = 0; //reset RIT_count also, probably not needed though, because ritstart sets it up again
 //				Chip_RIT_Disable(LPC_RITIMER); // disable timer
 //				// Give semaphore and set context switch flag if a higher priority task was woken up
 //				xSemaphoreGiveFromISR(sbRIT, &xHigherPriorityWoken);
@@ -321,8 +321,7 @@ static void prvSetupHardware(void)
 void RIT_start(int count, int us) {
 	uint64_t cmp_value;
 	// Determine approximate compare value based on clock rate and passed interval
-	cmp_value = (uint64_t) Chip_Clock_GetSystemClockRate() * (uint64_t) us
-			/ 1000000;
+	cmp_value = (uint64_t) Chip_Clock_GetSystemClockRate() * (uint64_t) us / 1000000;
 	// disable timer during configuration
 	Chip_RIT_Disable(LPC_RITIMER);
 	g_RIT_count = count;
@@ -960,7 +959,7 @@ void plotLineGeneral(int x0, int y0, int x1, int y1) {
 	}
 
 	endingpoint:  //ending label for goto, for the special case of same startpoint and same endpoint, dont do anything
-	vTaskDelay();
+	vTaskDelay(2);
 	int kakka1=0;	//I think we maybe have to have the statement after endingpoint label to compile?!
 }
 
