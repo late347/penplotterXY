@@ -81,7 +81,7 @@ volatile std::atomic<int> g_executeM1orM2(0); //check 1 or 2 inside isr to decid
 //These global variables are shared usage between either case of conditional compilation Interrupt Handlers...
 volatile std::atomic<int> g_m1parameter(0);//  determine which pin is driven into which direction, straight motorMove horiz OR vert
 volatile std::atomic<int> g_m2parameter(0);//   determine which two pins are driven into which direction at the same time, diagonal motorMove
-const int ppsValue = 2000;	//2000 pps works quite well with RIT-interrupt-driven-bresenhamPENCIL, AND ALSO forloopBresenhamPENCIL
+const int ppsValue = 1000;	//2000 pps works quite well with RIT-interrupt-driven-bresenhamPENCIL, AND ALSO forloopBresenhamPENCIL
 volatile uint32_t g_RIT_count(0); //NOTE! this variable is used as amountOfHalfpulses which is double the amount of fullsteps, to drive either version of Bresenham
 volatile std::atomic<bool> g_pulseState(true);//NOTE!! THIS VARIABLE IS NECESSARY for rit interrupt handlers! It is used for halfpulsing
 volatile std::atomic<bool> g_limitStatusOK(true); //global variable that the tasks can read, but RIT_isr can modify if you hit the limits.
@@ -274,6 +274,84 @@ void RIT_IRQHandler(void) {
 }
 #endif
 /**********************************************************************************************************/
+
+
+
+///*** RIT interrupt handler for looping-style Bresenham algorithm, USE CONDITIONAL COMPILATION TO ENABLE ***/
+//#ifdef useLoopingBresenham
+//extern "C" {
+//void RIT_IRQHandler(void) {
+//	portBASE_TYPE xHigherPriorityWoken = pdFALSE;	// This used to check if a context switch is required
+//	Chip_RIT_ClearIntStatus(LPC_RITIMER); // clear IRQ flag
+//
+//
+//		if (RIT_count > 0) {
+//			isEven= (RIT_count % 2 == 0);
+//			RIT_count--;
+//			// do something useful here...
+//			limitStatusOK = (  limitYMinP->read() && limitYMaxP->read() && limitXMaxP->read() && limitXMinP->read()  );
+//			if (limitStatusOK) {
+//				if(executeM1orM2==1) { //execute M1 pattern move
+//					switch(m1parameter) { //actuate only one motor straight move
+//					case 1: stepXP->write(pulseState); break;
+//					case 3: stepYP->write(pulseState); break;
+//					case 5: stepXP->write(pulseState); break;
+//					case 7: stepYP->write(pulseState); break;
+//					default: break;//shouldnt be here
+//					}
+//					if(isEven){
+//						switch(m1parameter){
+//						case 1: g_curX++; break;
+//						case 3: g_curY++; break;
+//						case 5: g_curX--; break;
+//						case 7: g_curY--; break;
+//						}
+//					}
+//				}else if(executeM1orM2 == 2){//execute M2 pattern move
+//					stepXP->write(pulseState);//actuate both motors diagonal move
+//					stepYP->write(pulseState);
+//					if (isEven) {
+//						switch(m2parameter){
+//						case 2: g_curX++; g_curY++; break;
+//						case 4: g_curX--; g_curY++; break;
+//						case 6: g_curX--; g_curY--; break;
+//						case 8: g_curX++; g_curY--; break;
+//						}
+//					}
+//				}
+//				pulseState = !pulseState;//move motor and toggle pulsestate rit_halfpulses
+//				if(RIT_count == 0){
+//					pulseState = true; //prepare pulsestate for next G1command
+//					expectm2 = false; //reset boolean in preparation for the beginning of next G1 command, so it will be false in beginning of ritstart
+//					isEven=true;
+////					stepXP->write(false);
+////					stepYP->write(false);
+//					RIT_count = 0; //reset RIT_count also, probably not needed though, because ritstart sets it up again
+//					Chip_RIT_Disable(LPC_RITIMER); // disable timer
+//					// Give semaphore and set context switch flag if a higher priority task was woken up
+//					xSemaphoreGiveFromISR(sbRIT, &xHigherPriorityWoken);
+//				}
+//			} else {//WE HIT THE WALL, set rit_count=0 and soon the motor will stop, hopefully
+//				stepXP->write(false);
+//				stepYP->write(false);
+//				RIT_count = 0;
+//			}
+//		} else {
+//			pulseState=true;
+////			stepXP->write(false);
+////			stepYP->write(false);
+//			Chip_RIT_Disable(LPC_RITIMER); // disable timer
+//			// Give semaphore and set context switch flag if a higher priority task was woken up
+//			xSemaphoreGiveFromISR(sbRIT, &xHigherPriorityWoken);
+//		}
+//		// End the ISR and (possibly) do a context switch
+//		portEND_SWITCHING_ISR(xHigherPriorityWoken);
+//
+//
+//}
+//}
+//#endif
+///**********************************************************************************************************/
 
 
 
@@ -1637,57 +1715,78 @@ static void logic_test_rit_bresenham_task(void*pvParameters){
 
 /*here are testing tasks for bresenham plotting, to verify the algorithms in plottersimulator*/
 static void testdraw_isr_bresenham_task(void*pvParameters){
+	xEventGroupWaitBits(eventGroup, 0x1, pdFALSE, pdFALSE, portMAX_DELAY);	//wait until real_calibration_task finishes!
+
+
 	vTaskDelay(500);
-	setPenValue(90);
-	refactored_BresenhamInterruptAlgorithm(250, 250, 300, 250); //0deg
+	setPenValue(160);
+	refactored_BresenhamInterruptAlgorithm(g_curX, g_curY, g_curX+12000, g_curY+12000);
+	int loopcounter = 0;
 
-	refactored_BresenhamInterruptAlgorithm(300,250,	250,250); //go back
+	while (loopcounter <= 2){
 
-	refactored_BresenhamInterruptAlgorithm(250, 250, 300, 260); //oct1 regular
-	refactored_BresenhamInterruptAlgorithm(300,260,	250,250); //go back
+		//square
+			refactored_BresenhamInterruptAlgorithm(g_curX, g_curY,	g_curX+8000, g_curY);
+			refactored_BresenhamInterruptAlgorithm(g_curX, g_curY, g_curX, g_curY+8000);
+			refactored_BresenhamInterruptAlgorithm(g_curX, g_curY,	g_curX-8000, g_curY);
+			refactored_BresenhamInterruptAlgorithm(g_curX, g_curY,	g_curX, g_curY-8000);
+
+			//diamond
+			refactored_BresenhamInterruptAlgorithm(g_curX, g_curY,	g_curX+5000, g_curY+5000);
+			refactored_BresenhamInterruptAlgorithm(g_curX, g_curY, g_curX+5000, g_curY-5000);
+			refactored_BresenhamInterruptAlgorithm(g_curX, g_curY,	g_curX-5000, g_curY-5000);
+			refactored_BresenhamInterruptAlgorithm(g_curX, g_curY,	g_curX-5000, g_curY+5000);
+
+			//oct1
+			refactored_BresenhamInterruptAlgorithm(g_curX, g_curY, g_curX+5000, g_curY+3000);
+			refactored_BresenhamInterruptAlgorithm(g_curX, g_curY, g_curX-5000, g_curY-3000);
+			//oct2
+			refactored_BresenhamInterruptAlgorithm(g_curX, g_curY, g_curX+3000, g_curY+5000);
+			refactored_BresenhamInterruptAlgorithm(g_curX, g_curY,	g_curX-3000, g_curY-5000);
+			//oct3
+			refactored_BresenhamInterruptAlgorithm(g_curX, g_curY,	g_curX-3000, g_curY+5000);
+			refactored_BresenhamInterruptAlgorithm(g_curX, g_curY,	g_curX+3000, g_curY-5000);
+			//oct4
+			refactored_BresenhamInterruptAlgorithm(g_curX, g_curY, g_curX-5000, g_curY+3000);
+			refactored_BresenhamInterruptAlgorithm(g_curX, g_curY,	g_curX+5000, g_curY-3000);
+			//oct5
+			refactored_BresenhamInterruptAlgorithm(g_curX, g_curY,	g_curX-5000, g_curY-3000);
+			refactored_BresenhamInterruptAlgorithm(g_curX, g_curY,	g_curX+5000, g_curY+3000);
+			//oct6
+			refactored_BresenhamInterruptAlgorithm(g_curX, g_curY,	g_curX-3000, g_curY-5000);
+			refactored_BresenhamInterruptAlgorithm(g_curX, g_curY,	g_curX+3000, g_curY+5000);
+			//oct7
+			refactored_BresenhamInterruptAlgorithm(g_curX, g_curY, g_curX+3000, g_curY-5000);
+			refactored_BresenhamInterruptAlgorithm(g_curX, g_curY,	g_curX-3000, g_curY+5000);
+			//oct8
+			refactored_BresenhamInterruptAlgorithm(g_curX, g_curY, g_curX+5000, g_curY-3000);
+			refactored_BresenhamInterruptAlgorithm(g_curX, g_curY,	g_curX-5000, g_curY+3000);
 
 
-	refactored_BresenhamInterruptAlgorithm(250,250,	300,300); //45deg angle
-	refactored_BresenhamInterruptAlgorithm(300,300, 250,250);//go back
 
-	refactored_BresenhamInterruptAlgorithm(250,250, 260, 300); //oct2 regular
-	refactored_BresenhamInterruptAlgorithm(260,300, 250,250); //go back
+		loopcounter++;
+	}
 
-	refactored_BresenhamInterruptAlgorithm(250,250,	250,300);//90deg angle
-	refactored_BresenhamInterruptAlgorithm(250,300,	250,250); //go back
 
-	refactored_BresenhamInterruptAlgorithm(250,250,	240,300);//oct3 regular
-	refactored_BresenhamInterruptAlgorithm(240,300, 250,250); //go back
 
-	refactored_BresenhamInterruptAlgorithm(250,250,	200,300);//135deg angle
-	refactored_BresenhamInterruptAlgorithm(200,300,	250,250); //go back
 
-	refactored_BresenhamInterruptAlgorithm(250,250,	200,260);//oct4reg
-	refactored_BresenhamInterruptAlgorithm(200,260,	250,250); //go back
-
-	refactored_BresenhamInterruptAlgorithm(250,250,	200,250);//180deg
-	refactored_BresenhamInterruptAlgorithm(200,250, 250,250); //go back
-
-	refactored_BresenhamInterruptAlgorithm(250,250,	200,240);//oct5 reg
-	refactored_BresenhamInterruptAlgorithm(200,240, 250,250); //go back
-
-	refactored_BresenhamInterruptAlgorithm(250,250,	200,200);//225deg
-	refactored_BresenhamInterruptAlgorithm(200,200, 250,250); //go back
-
-	refactored_BresenhamInterruptAlgorithm(250,250, 240,200);//oct6reg
-	refactored_BresenhamInterruptAlgorithm(240,200, 250,250); //go back
-
-	refactored_BresenhamInterruptAlgorithm(250,250, 250,200);//270deg
-	refactored_BresenhamInterruptAlgorithm(250,200, 250,250); //go back
-
-	refactored_BresenhamInterruptAlgorithm(250,250,	260,200);//oct7reg
-	refactored_BresenhamInterruptAlgorithm(260,200,	 250,250); //go back
-
-	refactored_BresenhamInterruptAlgorithm(250,250,	300,200);//315deg
-	refactored_BresenhamInterruptAlgorithm(300,200, 250,250); //go back
-
-	refactored_BresenhamInterruptAlgorithm(250,250, 300,240);//oct8reg
-	refactored_BresenhamInterruptAlgorithm(300,240,	250,250); //go back
+//
+//	refactored_BresenhamInterruptAlgorithm(g_curX, g_curY, g_curX, g_curY);
+//
+//	refactored_BresenhamInterruptAlgorithm(g_curX, g_curY, g_curX, g_curY);
+//	refactored_BresenhamInterruptAlgorithm(g_curX, g_curY, g_curX, g_curY);
+//
+//	refactored_BresenhamInterruptAlgorithm(g_curX, g_curY, g_curX, g_curY);
+//	refactored_BresenhamInterruptAlgorithm(g_curX, g_curY, g_curX, g_curY);
+//
+//	refactored_BresenhamInterruptAlgorithm(g_curX, g_curY,	g_curX, g_curY);
+//	refactored_BresenhamInterruptAlgorithm(g_curX, g_curY,	 g_curX, g_curY);
+//
+//	refactored_BresenhamInterruptAlgorithm(g_curX, g_curY,	g_curX, g_curY);
+//	refactored_BresenhamInterruptAlgorithm(g_curX, g_curY, g_curX, g_curY);
+//
+//	refactored_BresenhamInterruptAlgorithm(g_curX, g_curY, g_curX, g_curY);
+//	refactored_BresenhamInterruptAlgorithm(g_curX, g_curY,	g_curX, g_curY);
 
 
 	for(;;){
@@ -1697,6 +1796,68 @@ static void testdraw_isr_bresenham_task(void*pvParameters){
 
 }
 
+static void testdraw_forloop_task(void*pvParameters){
+	xEventGroupWaitBits(eventGroup, 0x1, pdFALSE, pdFALSE, portMAX_DELAY);	//wait until real_calibration_task finishes!
+
+
+	vTaskDelay(500);
+	setPenValue(160);
+	plotLineGeneral(g_curX, g_curY, g_curX+12000, g_curY+12000);
+	int loopcounter = 0;
+
+	while (loopcounter <= 2){
+
+		//square
+		plotLineGeneral(g_curX, g_curY,	g_curX+8000, g_curY);
+		plotLineGeneral(g_curX, g_curY, g_curX, g_curY+8000);
+		plotLineGeneral(g_curX, g_curY,	g_curX-8000, g_curY);
+		plotLineGeneral(g_curX, g_curY,	g_curX, g_curY-8000);
+
+			//diamond
+		plotLineGeneral(g_curX, g_curY,	g_curX+5000, g_curY+5000);
+		plotLineGeneral(g_curX, g_curY, g_curX+5000, g_curY-5000);
+		plotLineGeneral(g_curX, g_curY,	g_curX-5000, g_curY-5000);
+		plotLineGeneral(g_curX, g_curY,	g_curX-5000, g_curY+5000);
+
+			//oct1
+		plotLineGeneral(g_curX, g_curY, g_curX+5000, g_curY+3000);
+		plotLineGeneral(g_curX, g_curY, g_curX-5000, g_curY-3000);
+			//oct2
+		plotLineGeneral(g_curX, g_curY, g_curX+3000, g_curY+5000);
+		plotLineGeneral(g_curX, g_curY,	g_curX-3000, g_curY-5000);
+			//oct3
+		plotLineGeneral(g_curX, g_curY,	g_curX-3000, g_curY+5000);
+		plotLineGeneral(g_curX, g_curY,	g_curX+3000, g_curY-5000);
+			//oct4
+		plotLineGeneral(g_curX, g_curY, g_curX-5000, g_curY+3000);
+		plotLineGeneral(g_curX, g_curY,	g_curX+5000, g_curY-3000);
+			//oct5
+		plotLineGeneral(g_curX, g_curY,	g_curX-5000, g_curY-3000);
+		plotLineGeneral(g_curX, g_curY,	g_curX+5000, g_curY+3000);
+			//oct6
+		plotLineGeneral(g_curX, g_curY,	g_curX-3000, g_curY-5000);
+		plotLineGeneral(g_curX, g_curY,	g_curX+3000, g_curY+5000);
+			//oct7
+		plotLineGeneral(g_curX, g_curY, g_curX+3000, g_curY-5000);
+		plotLineGeneral(g_curX, g_curY,	g_curX-3000, g_curY+5000);
+			//oct8
+		plotLineGeneral(g_curX, g_curY, g_curX+5000, g_curY-3000);
+		plotLineGeneral(g_curX, g_curY,	g_curX-5000, g_curY+3000);
+
+
+
+		loopcounter++;
+	}
+
+
+
+
+	for(;;){
+		vTaskDelay(10000);
+	}
+
+
+}
 
 static void draw_square_task(void*pvParameters) {
 
@@ -1801,7 +1962,7 @@ int main(void) {
 	Chip_RIT_Init(LPC_RITIMER);// initialize RIT (= enable clocking etc.)
 	Chip_SCT_Init(LPC_SCT0);//init SCtimer0Large
 	setupPenServo();//init servo pwm into center pos for the servo
-	setupLaserPWM();
+//	setupLaserPWM();
 	// set the priority level of the interrupt
 	// The level must be equal or lower than the maximum priority specified in FreeRTOS config
 	// Note that in a Cortex-M3 a higher number indicates lower interrupt priority
@@ -1821,7 +1982,6 @@ int main(void) {
 	vQueueAddToRegistry(commandQueue, "comQueue");
 	vQueueAddToRegistry(sbRIT, "sbRIT");
 
-#ifndef logicAnalyzerTest
 	/* usb parser mdraw commands thread */
 	xTaskCreate(parse_task, "parse_task",
 			configMINIMAL_STACK_SIZE * 6, NULL, (tskIDLE_PRIORITY + 1UL),
@@ -1831,23 +1991,18 @@ int main(void) {
 	xTaskCreate(execute_task, "execute_task",
 			configMINIMAL_STACK_SIZE * 4, NULL, (tskIDLE_PRIORITY + 1UL),
 			(TaskHandle_t *) NULL);
+//
+//	xTaskCreate(testdraw_forloop_task, "testdraw",
+//			configMINIMAL_STACK_SIZE * 4, NULL, (tskIDLE_PRIORITY + 1UL),
+//			(TaskHandle_t *) NULL);
+
 
 	/*servopencil and steppermotor calibration thread*/
 	xTaskCreate(real_calibrate_task, "real_calibrate_task",
 			configMINIMAL_STACK_SIZE * 6, NULL, (tskIDLE_PRIORITY + 1UL),
 			(TaskHandle_t *) NULL);
-#endif
 
-	/*here are some testing tasks maybe so you can see in logicanalyzer???*/
-#ifdef logicAnalyzerTest
-	xTaskCreate(logic_test_rit_bresenham_task, "logic_test_rit_bresenham_task",
-			configMINIMAL_STACK_SIZE * 4, NULL, (tskIDLE_PRIORITY + 1UL),
-			(TaskHandle_t *) NULL);
 
-	xTaskCreate(logic_test_initialize_task, "logic_test_initialize_task",
-			configMINIMAL_STACK_SIZE * 4, NULL, (tskIDLE_PRIORITY + 1UL),
-			(TaskHandle_t *) NULL);
-#endif
 
 	/* cdc thread */
 	xTaskCreate(cdc_task, "CDC",
