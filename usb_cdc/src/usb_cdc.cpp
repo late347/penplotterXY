@@ -749,14 +749,53 @@ int adjustm2motor(int curOctant) {
 }
 
 
+///*LASER SETUP, using SCTimer0Large highcounter*/
+//void setupLaserPWM(){
+//
+//	LPC_SCT0->CONFIG |= (3 << 17);	 // two 16-bit timers, auto limit, use  the HIGHCOUNTER FOR LASER, (use lowcounter for pencilservo)
+//	LPC_SCT0->CTRL_H |= (72 - 1) << 21; 	// set prescaler highcounter, SCTimer/PWM clock == 72mhz / 72 == 1mhz
+//	LPC_SCT0->MATCHREL[0].H = 1000 - 1; 	//sct0 highcounter  freq
+//	LPC_SCT0->MATCHREL[1].H = 235; 	// sct0 highcounter pulsewidth laser (hopefully avoid jitter at the transistor and still keeps laserOFF)
+//	Chip_SWM_MovablePortPinAssign(SWM_SCT0_OUT1_O, 0, 12);  //set laserpin port_0.pin_12 to sct0 output1
+//
+//	/*configure events, freq event for laser, and pulsewidthmatch event for laser*/
+//	LPC_SCT0->EVENT[2].STATE = 0xFFFFFFFF; //all states allowed event2, use for freqmatch
+//	LPC_SCT0->EVENT[3].STATE = 0xFFFFFFFF; //all states allowed event3, use for pulsewidthmatch
+//
+//	LPC_SCT0->EVENT[2].CTRL = (1<<4) |(1<<12)  ; 	//event2 sct0 highcounter frequency match, select reg0 (matchrel[0].h)
+//	LPC_SCT0->EVENT[3].CTRL = (1<<4) | (1<<12) | (1); 	//event3 sct0 highcounter pulsewidthmatch, HEVENTbitTrue,  select reg1 (matchrel[1].h)
+//
+//	/*set outputs with freq events*/
+//	LPC_SCT0->OUT[1].SET = (1<<2); //event2 sets sct0output1
+//
+//	/*clears outputs with pulsewidthmatch events*/
+//	LPC_SCT0->OUT[1].CLR = 	1<<3;	//event3 clears sct0output1
+//
+//	/*unhalt timers*/
+//	LPC_SCT0->CTRL_H &= ~(1<<2);  //unhalt sct0 highcounter
+//}
+//
+///*LASER SET NEW VALUE, using SCTimer0Large highcounter*/
+//void setLaserValue(int amount){
+//	bool allowed = (amount >= 0) &&  (amount <= 255);
+//	int newval = 0;
+//
+//	/*maps the smaller range [0,1,2... 255] into  range [235, 238, 241,...1000 ], hopefully avoid jitter at minimum laserlevels*/
+//	if(allowed){
+//		newval = 3 * amount +235;
+//		LPC_SCT0->MATCHREL[1].H = newval;
+//	}
+//
+//}
+
 /*LASER SETUP, using SCTimer0Large highcounter*/
 void setupLaserPWM(){
 
 	LPC_SCT0->CONFIG |= (3 << 17);	 // two 16-bit timers, auto limit, use  the HIGHCOUNTER FOR LASER, (use lowcounter for pencilservo)
 	LPC_SCT0->CTRL_H |= (72 - 1) << 21; 	// set prescaler highcounter, SCTimer/PWM clock == 72mhz / 72 == 1mhz
 	LPC_SCT0->MATCHREL[0].H = 1000 - 1; 	//sct0 highcounter  freq
-	LPC_SCT0->MATCHREL[1].H = 235; 	// sct0 highcounter pulsewidth laser (hopefully avoid jitter at the transistor and still keeps laserOFF)
-	Chip_SWM_MovablePortPinAssign(SWM_SCT0_OUT1_O, 0, 12);  //set laserpin port_0.pin_12 to sct0 output1
+	LPC_SCT0->MATCHREL[1].H = 0; 	// sct0 highcounter pulsewidth laser
+	Chip_SWM_MovablePortPinAssign(SWM_SCT0_OUT1_O, 0, 12);  //set laserpin to sct0 output1
 
 	/*configure events, freq event for laser, and pulsewidthmatch event for laser*/
 	LPC_SCT0->EVENT[2].STATE = 0xFFFFFFFF; //all states allowed event2, use for freqmatch
@@ -780,13 +819,19 @@ void setLaserValue(int amount){
 	bool allowed = (amount >= 0) &&  (amount <= 255);
 	int newval = 0;
 
-	/*maps the smaller range [0,1,2... 255] into  range [235, 238, 241,...1000 ], hopefully avoid jitter at minimum laserlevels*/
+	/*put the amount [0,255] directly into laser pulsewidthmatch register, after it was legally within range*/
 	if(allowed){
-		newval = 3 * amount +235;
+		if(amount > 250){
+			newval = 1000;
+		}
+		else{
+			newval = 4 * amount;
+		}
 		LPC_SCT0->MATCHREL[1].H = newval;
 	}
-
 }
+
+
 
 
 /*PEN-SERVO SETUP FOR THE PROJECT, using SCTimer0Large*/
@@ -1955,7 +2000,7 @@ int main(void) {
 	Chip_RIT_Init(LPC_RITIMER);// initialize RIT (= enable clocking etc.)
 	Chip_SCT_Init(LPC_SCT0);//init SCtimer0Large
 	setupPenServo();//init servo pwm into center pos for the servo
-//	setupLaserPWM();
+	setupLaserPWM();
 
 	/* set the priority level of the interrupt
 	 The level must be equal or lower than the maximum priority specified in FreeRTOS config
