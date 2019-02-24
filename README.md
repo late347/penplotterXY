@@ -5,7 +5,7 @@ XY Plotter Project
 
 
 LASER WARNINING!!!
-Use any code at your own responsibility. It would be suggested that you disconnect the power cord from the laser module before running any code. If you intend to use laser module, it is suggested that you first put the correct and proper safety glasses on before running any code. Use at your own risk.
+Use any code at your own responsibility. It would be suggested that you disconnect the power cord from the laser module before running any code. If you intend to use laser module, it is suggested that you first put the correct and proper safety glasses on before running any code, and even before connecting the power cord to the laser module. Use any code at your own risk.
 
 
 C++ FreeRTOS firmware for a makeblock XY plotter device with lasermodule. To be utilized with mDraw desktop GUI.
