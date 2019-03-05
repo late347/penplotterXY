@@ -13,10 +13,12 @@ Code was tested with an emulator board and seemed to work in that emulation envi
 
 Bresenham algorithm part of the code was inspired by the original Bresenham's IBM journal article about that algorithm (should be available online for free)
 
-In the end, there was at least one bug found
+In the end, there were a couple issues, but otherwise it was quite rewarding and practically useful (working) project.
 
 1.) the laser module SCtimer had a bug in it which was later verified with oscilloscope. So the bug was that the SCtimer didn't operate at proper duty cycle when supposedly 100%, I think the bug was in setLaserValue function. The bug could have been corrected by having smaller  value in that specific register. E.g. something like this LPC_SCT0->MATCHREL[1].H=997. For more detailed examples about duty cycle and SCtimer programming refer to the SCtimer cookbook made by NXP.
 
-2.) more of an undocumented feature type of bug was that the mDraw image had to be mirrored  (inside mDraw GUI) for the plot to be accurate on the paper. This evidently had crept into the design along development. There was some unclear documentation about that with the actual plotter but I wasn't able to resolve the issue in the code in due time.
+2.) more of an undocumented feature type of bug was that the mDraw image had to be mirrored  (inside mDraw GUI) for the plot to be accurate on the paper. This evidently had crept into the design along development. There was some unclear documentation about that with the actual plotter but I wasn't able to resolve the issue in the code in due time. 
 
-Otherwise the plotter still worked in penMode and laserMode, it was slightly slow, but also accurate as verified by the laser plots on paper.
+With hindsight I think this bug could have been  fixed but it would require switching the direction of the initial state of that one axis inside calibration task, and also invert that one axis direction inside the refactored_setupBresenhamDirPins() function. 
+
+Otherwise the plotter still worked in penMode and laserMode, it was slightly slow, but also accurate as verified by the accurate path of the laser plots on paper.
