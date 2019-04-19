@@ -22,7 +22,7 @@ In the end, there were a couple issues, but otherwise it was quite rewarding and
 With hindsight I think this bug could have been  fixed but it would require switching the direction of the initial state of that one axis inside calibration task, and also invert that one axis direction inside the refactored_setupBresenhamDirPins() function. 
 
 
-3.) also there was an unknown issue with one of the three plotters. For some reason the same exact code ran worse on one of the three plotters. It may have been a hardware issue, or a code issue. For the two out of three plotters the same code ran accurately in pencilmode and lasermode
+3.) also there was an unknown issue with one of the three plotters. For some reason the same exact code ran worse on one of the three plotters. It may have been a hardware issue (when I asked about it from teacher), or a code issue. For the two out of three plotters the same code ran accurately in pencilmode and lasermode in regular fashion...
 
 
 Otherwise the plotter still worked in penMode and laserMode, it was slightly slow, but also accurate as verified by the accurate path of the laser plots on paper.
