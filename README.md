@@ -8,7 +8,7 @@ LASER WARNING!!!
 Use any code at your own responsibility. It would be suggested that you disconnect the power cord from the laser module before running any code. If you intend to use laser module, it is suggested that you first put the correct and proper safety glasses on before running any code, and even before connecting the power cord to the laser module. Use any code at your own risk.
 
 
-C++ FreeRTOS firmware for a makeblock XY plotter device with lasermodule. To be utilized with mDraw desktop GUI.
+C/C++ FreeRTOS firmware for a makeblock XY plotter device with lasermodule. To be utilized with mDraw desktop GUI program.
 Code was tested with an emulator board and seemed to work in that emulation environment (time criticality was not enforced in that emulation). Also code worked quite well on the real plotter device.
 
 Bresenham algorithm part of the code was inspired by the original Bresenham's IBM journal article about that algorithm (should be available online for free)
